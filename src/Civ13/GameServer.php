@@ -17,7 +17,6 @@ use Civ13\Exceptions\FileNotFoundException;
 use Civ13\Exceptions\InvalidConfigException;
 use Civ13\Exceptions\MissingSystemPermissionException;
 use Civ13\Exceptions\PartException;
-use Civ13\Exceptions\UserInputException;
 use Civ13\Exceptions\VerifierException;
 use Discord\Discord;
 use Discord\Builders\Components\ActionRow;
@@ -74,6 +73,7 @@ class GameServer
     public ?\Civ13\Local\LauncherManagement $launcherManagement = null;
     /** Set whenever management is enabled, even if its configuration is invalid, so legacy lifecycle commands fail closed. */
     private bool $launcherManagementRequired = false;
+    private bool $retireLegacyLifecycle = false;
     /** Host script control: gaia_host.py for a scheduled-task host, or shard_group.py for one region of a shard group. */
     private \Civ13\Local\GaiaHostControl|\Civ13\Local\ShardRegionControl|null $gaiaHost = null;
     /** Set when shard_group is configured but unusable: host controls then refuse instead of launching DreamDaemon. */
@@ -233,6 +233,7 @@ class GameServer
                 $this->hostUnavailable = $error->getMessage();
             }
         }
+        $this->retireLegacyLifecycle = ($options['retire_legacy_lifecycle'] ?? false) === true;
         $this->launcherManagementRequired = ($options['shard_group']['management']['enabled'] ?? false) === true;
         // Additional launcher actions never inherit legacy role authority or implicit enablement.
         if (($options['shard_group']['management']['enabled'] ?? false) === true && $this->hostUnavailable === null && $this->gaiaHost instanceof \Civ13\Local\ShardRegionControl) {
@@ -1077,102 +1078,64 @@ class GameServer
     {
         return $this->enabled && \Civ13\Server\Ipc::append($this->basedir.Civ13::discord2dm, [$sender, $recipient, $message]);
     }
-    /**
-     * Hosts the game server by executing necessary commands and setting up timers for hosting.
-     *
-     * @param Message|null $message An optional message object that can be used to react to the hosting action.
-     */
+    /** All legacy entry points (text, slash, staff panels) share this guard. */
+    private function legacyLifecycleBlockReason(): ?string
+    {
+        if ($this->retireLegacyLifecycle) {
+            return "Legacy lifecycle controls are retired for {$this->key}. Use the host operator runbook; {$this->key}hoststatus is read-only.";
+        }
+        if ($this->launcherManagementRequired || $this->launcherManagement !== null) {
+            return "Use {$this->key}manage with its per-action confirmation; legacy lifecycle controls are disabled for managed regions.";
+        }
+        return null;
+    }
+
+    private function unavailableLifecycle(): PromiseInterface
+    {
+        return reject(new \RuntimeException('No supervised lifecycle control is configured. Use the host launcher or operator runbook.'));
+    }
+
+    /** Request a start from this world's explicitly configured controller. */
     public function Host(?Message $message = null): PromiseInterface
     {
-        if ($this->launcherManagementRequired || $this->launcherManagement !== null) { return reject(new \RuntimeException("Use {$this->key}manage with its per-action confirmation; legacy lifecycle controls are disabled for managed regions.")); }
+        if (($reason = $this->legacyLifecycleBlockReason()) !== null) { return reject(new \RuntimeException($reason)); }
         if ($this->engine === 'opendream') { return $this->requestEngineControl('start'); }
         if ($this->hostUnavailable !== null) { return reject(new \RuntimeException('shard_group control unavailable: '.$this->hostUnavailable)); }
         if ($this->gaiaHost !== null) { return $this->gaiaHostRequest('start', $message); }
         if (PHP_OS_FAMILY === 'Windows' || getenv('CIVILIZATIONBOT_PROFILE')) { return $this->nativeRequest('start', $message); }
         if ($this->systemdUnit !== null || $this->systemdUnavailable !== null) { return $this->systemdRequest('start', $message); }
-        OSFunctions::execInBackground("python3 {$this->basedir}".Civ13::updateserverabspaths);
-        if (file_exists($this->basedir.Civ13::serverdata)) {
-            OSFunctions::execInBackground("rm -f {$this->basedir}".Civ13::serverdata);
-        }
-        OSFunctions::execInBackground("python3 {$this->basedir}".Civ13::killsudos);
-
-        if (! isset($this->civ13->timers["{$this->key}host"])) {
-            $this->civ13->timers["{$this->key}host"] = $this->civ13->discord->getLoop()->addTimer(30, function () use ($message) {
-                unset($this->civ13->timers["{$this->key}host"]);
-                $promise = OSFunctions::execInBackground("nohup DreamDaemon {$this->basedir}".Civ13::dmb." {$this->port} -trusted -webclient -logself > /dev/null 2>&1 & disown");
-                if ($message) {
-                    $message->react('👍');
-                }
-            });
-        } else {
-            $this->logger->info("Server host timer already exists for {$this->key}.");
-        }
-        return resolve(['accepted' => true, 'engine' => 'byond', 'state' => 'legacy operation scheduled']);
+        return $this->unavailableLifecycle();
     }
-    /** Shuts the server down (via `killciv13`), optionally announcing it in OOC first. */
+
+    /** Request a stop. The controller, not the bot, handles world announcements. */
     public function Kill(?Message $message = null, bool $notify = true): PromiseInterface
     {
-        if ($this->launcherManagementRequired || $this->launcherManagement !== null) { return reject(new \RuntimeException("Use {$this->key}manage with its per-action confirmation; legacy lifecycle controls are disabled for managed regions.")); }
+        if (($reason = $this->legacyLifecycleBlockReason()) !== null) { return reject(new \RuntimeException($reason)); }
         if ($this->engine === 'opendream') { return $this->requestEngineControl('stop'); }
         if ($this->hostUnavailable !== null) { return reject(new \RuntimeException('shard_group control unavailable: '.$this->hostUnavailable)); }
-        if ($this->gaiaHost instanceof \Civ13\Local\ShardRegionControl) {
-            if ($notify) { $this->OOCMessage("Server is shutting down. To get notified when we go live again, please join us on Discord at {$this->civ13->discord_formatted}", $this->civ13->discord->username ?? 'Server'); }
-            return $this->gaiaHostRequest($this->shardKillAction, $message);
-        }
-        if ($this->gaiaHost !== null) {
-            if ($notify) { $this->OOCMessage('The server is saving and shutting down. Your character will be here when it comes back.', $this->civ13->discord->username ?? 'Server'); }
-            return $this->gaiaHostRequest('stop', $message);
-        }
+        if ($this->gaiaHost instanceof \Civ13\Local\ShardRegionControl) { return $this->gaiaHostRequest($this->shardKillAction, $message); }
+        if ($this->gaiaHost !== null) { return $this->gaiaHostRequest('stop', $message); }
         if (PHP_OS_FAMILY === 'Windows' || getenv('CIVILIZATIONBOT_PROFILE')) { return $this->nativeRequest('save-stop', $message); }
-        if ($this->systemdUnit !== null || $this->systemdUnavailable !== null) {
-            if ($notify) { $this->OOCMessage("Server is shutting down. To get notified when we go live again, please join us on Discord at {$this->civ13->discord_formatted}", $this->civ13->discord->username ?? 'Server'); }
-            return $this->systemdRequest('stop', $message);
-        }
-        if ($notify) {
-            $sender = (string) ((($message && $message->user_id) ? ($this->civ13->verifier->getVerifiedItem($message->user_id)['ss13'] ?? null) : null) ?? $this->civ13->discord->username ?? 'Server');
-            $this->OOCMessage("Server is shutting down. To get notified when we go live again, please join us on Discord at {$this->civ13->discord_formatted}", $sender);
-        }
-        $this->civ13->loop->addTimer(10, function () use ($message): void {
-            OSFunctions::execInBackground("python3 {$this->basedir}".Civ13::killciv13);
-            if ($message) {
-                $message->react('👍');
-            }
-        });
-        return resolve(['accepted' => true, 'engine' => 'byond', 'state' => 'legacy operation scheduled']);
-    }
-    /** Kills the server and re-hosts it 20s later, optionally announcing the restart in OOC. */
-    public function Restart(?Message $message = null, bool $notify = true): PromiseInterface
-    {
-        if ($this->launcherManagementRequired || $this->launcherManagement !== null) { return reject(new \RuntimeException("Use {$this->key}manage with its per-action confirmation; legacy lifecycle controls are disabled for managed regions.")); }
-        if ($this->engine === 'opendream') { return $this->requestEngineControl('restart'); }
-        if ($this->hostUnavailable !== null) { return reject(new \RuntimeException('shard_group control unavailable: '.$this->hostUnavailable)); }
-        if ($this->gaiaHost instanceof \Civ13\Local\ShardRegionControl) {
-            if ($notify) { $this->OOCMessage("Server is now restarting. To share your feedback or experiences for this round, please join us on Discord at {$this->civ13->discord_formatted}", $this->civ13->discord->username ?? 'Server'); }
-            return $this->gaiaHostRequest('restart', $message);
-        }
-        if ($this->gaiaHost !== null) {
-            if ($notify) { $this->OOCMessage('The server is saving and restarting. Your character will be here when it comes back.', $this->civ13->discord->username ?? 'Server'); }
-            return $this->gaiaHostRequest('restart', $message);
-        }
-        if (PHP_OS_FAMILY === 'Windows' || getenv('CIVILIZATIONBOT_PROFILE')) { return $this->nativeRequest('restart', $message); }
-        if ($this->systemdUnit !== null || $this->systemdUnavailable !== null) {
-            if ($notify) { $this->OOCMessage("Server is now restarting. To share your feedback or experiences for this round, please join us on Discord at {$this->civ13->discord_formatted}", $this->civ13->discord->username ?? 'Server'); }
-            return $this->systemdRequest('restart', $message);
-        }
-        $this->Kill(null, false);
-        $this->civ13->loop->addTimer(20, function () use ($message): void {
-            $this->Host($message);
-        });
-        if ($notify) {
-            $this->OOCMessage("Server is now restarting. To share your feedback or experiences for this round, please join us on Discord at {$this->civ13->discord_formatted}", $message ? ($this->civ13->verifier->getVerifiedItem($message->author)['ss13'] ?? $this->civ13->discord->username) : $this->civ13->discord->username);
-        }
-        return resolve(['accepted' => true, 'engine' => 'byond', 'state' => 'legacy operation scheduled']);
+        if ($this->systemdUnit !== null || $this->systemdUnavailable !== null) { return $this->systemdRequest('stop', $message); }
+        return $this->unavailableLifecycle();
     }
 
-    /** Pulls and compiles master while the server is stopped (gaia_host and shard_group hosts only). */
+    /** Request a controller-owned restart, never a timer-based kill and rehost. */
+    public function Restart(?Message $message = null, bool $notify = true): PromiseInterface
+    {
+        if (($reason = $this->legacyLifecycleBlockReason()) !== null) { return reject(new \RuntimeException($reason)); }
+        if ($this->engine === 'opendream') { return $this->requestEngineControl('restart'); }
+        if ($this->hostUnavailable !== null) { return reject(new \RuntimeException('shard_group control unavailable: '.$this->hostUnavailable)); }
+        if ($this->gaiaHost !== null) { return $this->gaiaHostRequest('restart', $message); }
+        if (PHP_OS_FAMILY === 'Windows' || getenv('CIVILIZATIONBOT_PROFILE')) { return $this->nativeRequest('restart', $message); }
+        if ($this->systemdUnit !== null || $this->systemdUnavailable !== null) { return $this->systemdRequest('restart', $message); }
+        return $this->unavailableLifecycle();
+    }
+
+    /** Ask the configured host to update or stage its configured revision. */
     public function Update(?Message $message = null): PromiseInterface
     {
-        if ($this->launcherManagementRequired || $this->launcherManagement !== null) { return reject(new \RuntimeException("Use {$this->key}manage with its per-action confirmation; legacy lifecycle controls are disabled for managed regions.")); }
+        if (($reason = $this->legacyLifecycleBlockReason()) !== null) { return reject(new \RuntimeException($reason)); }
         if ($this->hostUnavailable !== null) { return reject(new \RuntimeException('shard_group control unavailable: '.$this->hostUnavailable)); }
         if ($this->gaiaHost === null) { return reject(new \RuntimeException('Updating is only available for a gaia_host or shard_group server')); }
         return $this->gaiaHostRequest('update', $message);
@@ -1222,44 +1185,12 @@ class GameServer
             return $result;
         });
     }
-    /**
-     * Swaps the current map to the specified map.
-     *
-     * @param  string                   $mapto The name of the map to switch to.
-     * @param  string                   $admin The name of the admin requesting the map swap.
-     * @return PromiseInterface<string> A promise that resolves with a success message or rejects with an error message.
-     */
+    /** Only an existing typed map controller may accept a map change. */
     public function MapSwap(string $mapto, string $admin): PromiseInterface
     {
+        if (($reason = $this->legacyLifecycleBlockReason()) !== null) { return reject(new \RuntimeException($reason)); }
         if ($this->engine === 'opendream') { return $this->requestEngineControl('mapswap', $mapto); }
-        if (PHP_OS_FAMILY === 'Windows' || getenv('CIVILIZATIONBOT_PROFILE')) { return reject(new \RuntimeException('Native map control is unavailable on Windows')); }
-        $mapto = strtoupper($mapto);
-        if (! file_exists($fp = $this->civ13->gitdir.Civ13::maps) || ! $file = @fopen($fp, 'r')) {
-            $this->logger->error($err = "Unable to open `$fp` for reading.");
-
-            return reject(new FileNotFoundException($err));
-        }
-    
-        $maps = [];
-        while (($fp = fgets($file, 4096)) !== false) {
-            $linesplit = explode(' ', trim(str_replace('"', '', $fp)));
-            if (isset($linesplit[2]) && $map = trim($linesplit[2])) {
-                $maps[] = $map;
-            }
-        }
-        fclose($file);
-        if (! in_array($mapto, $maps)) {
-            return reject(new UserInputException("`$mapto` was not found in the map definitions."));
-        }
-
-        $this->OOCMessage($msg = "Server is now changing map to `$mapto`.", $this->civ13->verifier->getVerifiedItem($admin)['ss13'] ?? $this->civ13->discord->username);
-        if ($channel = $this->civ13->discord->getChannel($this->discussion)) {
-            $msg = (isset($this->civ13->role_ids['mapswap']) ? "<@&{$this->civ13->role_ids['mapswap']}>, " : '')."{$this->name} $msg";
-            $channel->sendMessage($msg);
-        }
-        $this->loop->addTimer(10, fn () => OSFunctions::execInBackground("python3 {$this->basedir}".Civ13::mapswap." $mapto"));
-
-        return resolve($msg);
+        return reject(new \RuntimeException('Legacy map swaps are retired. Use the world operator runbook or in-game map voting.'));
     }
 
     /** All normal message/slash callers use this adapter, with no native fallback. */
@@ -1947,11 +1878,9 @@ class GameServer
     public function getRank(string $ckey): string
     {
         $line_array = [];
-        $return = '';
-        if (! @touch($this->ranking_path) || ! $search = @fopen($this->ranking_path, 'r')) {
-            $this->logger->warning($return = "Unable to open `{$this->ranking_path}`");
-
-            return $return;
+        if (! $search = @fopen($this->ranking_path, 'r')) {
+            $this->logger->warning("Unable to open ranking for {$this->key}");
+            return 'Ranking is unavailable for this world.';
         }
         while (($fp = fgets($search, 4096)) !== false) {
             $line_array[] = $fp;
@@ -1982,8 +1911,8 @@ class GameServer
      */
     public function getRanking(): PromiseInterface
     {
-        if (! @touch($path = $this->basedir.Civ13::ranking_path) || ! $search = @fopen($path, 'r')) {
-            return reject(new MissingSystemPermissionException("Unable to open `$path`"));
+        if (! $search = @fopen($this->basedir.Civ13::ranking_path, 'r')) {
+            return reject(new MissingSystemPermissionException('Ranking is unavailable for this world.'));
         }
         
         $line_array = [];
@@ -2009,7 +1938,7 @@ class GameServer
      * @throws MissingSystemPermissionException If the awards or ranking files cannot be accessed or written to.
      *
      * The function performs the following steps:
-     * 1. Attempts to touch the awards and ranking files to ensure they are accessible.
+     * 1. Requires an existing awards file for this world.
      * 2. Reads the awards file line by line, skipping empty lines.
      * 3. Parses each line to extract user data and their corresponding medals.
      * 4. Calculates the score for each user based on their medals using predefined medal scores.
@@ -2018,14 +1947,10 @@ class GameServer
      */
     public function recalculateRanking(): PromiseInterface
     {
-        if (! @touch($awards = $this->basedir.Civ13::awards)) {
-            return reject(new MissingSystemPermissionException("Unable to access `{$awards}`"));
-        }
-        if (! @touch($ranking_path = $this->basedir.Civ13::ranking_path)) {
-            return reject(new MissingSystemPermissionException("Unable to access `{$ranking_path}`"));
-        }
-        if (($lines = file($awards, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES)) === false) {
-            return reject(new MissingSystemPermissionException("Unable to read `$awards`"));
+        $awards = $this->basedir.Civ13::awards;
+        $ranking_path = $this->basedir.Civ13::ranking_path;
+        if (! is_file($awards) || ($lines = @file($awards, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES)) === false) {
+            return reject(new MissingSystemPermissionException('No readable awards source is configured for this world.'));
         }
         $result = [];
         foreach ($lines as $line) {

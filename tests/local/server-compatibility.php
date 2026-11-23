@@ -41,6 +41,38 @@ $root = sys_get_temp_dir().'/bot-v5-'.bin2hex(random_bytes(6)); mkdir($root);
 try {
  $server=(new ReflectionClass(\Civ13\GameServer::class))->newInstanceWithoutConstructor();
  $server->civ13=(new ReflectionClass(StatusCivFixture::class))->newInstanceWithoutConstructor();
+ // The TDM gate, slash helper, and staff panel all use the same GameServer
+ // paths. A configured backend must still receive zero mutating calls.
+ $tdm=(new ReflectionClass(\Civ13\GameServer::class))->newInstanceWithoutConstructor();
+ $tdm->engine='byond';
+ (new ReflectionProperty($tdm,'key'))->setValue($tdm,'tdm');
+ (new ReflectionProperty($tdm,'retireLegacyLifecycle'))->setValue($tdm,true);
+ $fakeScript=$root.'/fake-controller';
+ file_put_contents($fakeScript,'not executed');
+ $commands=[];
+ $control=new \Civ13\Local\ShardRegionControl($fakeScript,$fakeScript,$fakeScript,'gateway',
+     function(array $argv,int $timeout)use(&$commands) {
+        $commands[]=$argv;
+        return resolve(['exit_code'=>0,'stdout'=>json_encode(['ok'=>true,'regions'=>['gateway'=>['name'=>'Gateway','listening'=>true]]])]);
+     });
+ (new ReflectionProperty($tdm,'gaiaHost'))->setValue($tdm,$control);
+ foreach(['Host'=>[], 'Kill'=>[], 'Restart'=>[], 'Update'=>[], 'MapSwap'=>['TEST','synthetic-admin']] as $method=>$args) {
+    $rejected=false;
+    $tdm->$method(...$args)->then(null,function(Throwable $error)use(&$rejected){$rejected=str_contains($error->getMessage(),'retired');});
+    check($rejected, "Managed TDM unexpectedly accepted {$method}");
+ }
+ check($commands===[], 'A retired TDM command contacted a controller');
+ $tdm->HostStatus()->then(function($status){check(str_contains($status,'Gateway'), 'Status went to the wrong region');});
+ check(count($commands)===1 && $commands[0][6]==='status' && $commands[0][7]==='--region=gateway', 'Read-only status did not reach the bound gateway');
+ unlink($fakeScript);
+ $standalone=(new ReflectionClass(\Civ13\GameServer::class))->newInstanceWithoutConstructor();
+ $standalone->engine='byond';
+ foreach(['Host'=>[], 'Kill'=>[], 'Restart'=>[], 'Update'=>[], 'MapSwap'=>['TEST','synthetic-admin']] as $method=>$args) {
+    $rejected=false;
+    $standalone->$method(...$args)->then(null,function()use(&$rejected){$rejected=true;});
+    check($rejected, "Control without a supervised backend unexpectedly accepted {$method}");
+ }
+
  foreach (['name'=>'Fixture','ip'=>'127.0.0.1','port'=>'18452','host'=>'Local','basedir'=>$root.'/'] as $property=>$value) {(new ReflectionProperty($server,$property))->setValue($server,$value);}
  $server->players=['player'];
  foreach (['byond','opendream'] as $engine) {
@@ -56,6 +88,15 @@ try {
  check($server->DirectMessage('hello','admin','player'),'production DM');
  check(!$server->DirectMessage("bad\nrecord",'admin','player'),'production IPC injection');
  $server->enabled=false; check(!$server->OOCMessage('hello','admin'),'disabled server write');
+ $rankingFile=$root.\Civ13\Civ13::ranking_path;
+ $awardsFile=$root.\Civ13\Civ13::awards;
+ $unavailable=0;
+ $server->getRanking()->then(null,function()use(&$unavailable){$unavailable++;});
+ $server->recalculateRanking()->then(null,function()use(&$unavailable){$unavailable++;});
+ check($unavailable===2&&!file_exists($rankingFile)&&!file_exists($awardsFile),'missing awards/rank created placeholder files');
+ file_put_contents($rankingFile,'5;historic');
+ $server->recalculateRanking()->then(null,function()use(&$unavailable){$unavailable++;});
+ check($unavailable===3&&file_get_contents($rankingFile)==='5;historic','missing awards overwrote existing ranking');
  file_put_contents($root.\Civ13\Civ13::awards,"player;date;long service medal\nleader;date;iron cross 2nd class\nplayer;date;wounded badge\n");
  $ranked=false;$server->recalculateRanking()->then(function()use(&$ranked){$ranked=true;});
  check($ranked&&file_get_contents($root.\Civ13\Civ13::ranking_path)==="5;leader".PHP_EOL."1;player",'production medal scoring/sorting');

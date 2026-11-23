@@ -2,7 +2,8 @@
 declare(strict_types=1);
 // ShardRegionControl with the real AsyncProcess worker and a stand-in script
 // that answers like Civ13's scripts/shard-group/shard_group.py. No game, no Discord.
-require $argv[1] ?? __DIR__.'/../../vendor/autoload.php';
+$loader = require $argv[1] ?? __DIR__.'/../../vendor/autoload.php';
+$loader->addPsr4('Civ13\\', __DIR__.'/../../src/Civ13/', true);
 require_once __DIR__.'/../../src/Civ13/Local/AsyncProcess.php';
 require_once __DIR__.'/../../src/Civ13/Local/GaiaHostControl.php';
 require_once __DIR__.'/../../src/Civ13/Local/ShardRegionControl.php';
@@ -71,6 +72,29 @@ try {
     shardCheck($error === null && $value['accepted'] === true && $value['action'] === 'kill' && $value['pid'] === 4242, 'forced stop');
     [$value, $error] = $run($battle, 'update');
     shardCheck($error instanceof UnexpectedValueException, 'acceptance for another region is not this region\'s');
+    $stage = ['accepted'=>true,'action'=>'stage','state'=>'asleep','operation'=>$operation];
+    foreach ([$stage, ['accepted'=>true,'action'=>'stage','state'=>'asleep','already_staging'=>true]] as $receipt) {
+        $answers['update:battle'] = json_encode(['ok'=>true,'accepted'=>['battle'=>$receipt],'refused'=>[]]);
+        file_put_contents($config, json_encode($answers));
+        [$value, $error] = $run($battle,'update');
+        shardCheck($error === null && $value === ['region'=>'battle']+$receipt, 'preserve accepted frozen stage outcome');
+    }
+    foreach ([
+        ['accepted'=>['battle'=>array_replace($stage,['state'=>'awake'])]],
+        ['accepted'=>['battle'=>array_replace($stage,['operation'=>false])]],
+        ['accepted'=>['battle'=>$stage+['region'=>'barracks']]],
+        ['accepted'=>['battle'=>$stage,'barracks'=>$stage]],
+        ['accepted'=>['battle'=>$stage],'refused'=>['battle'=>null]],
+    ] as $bad) {
+        $answers['update:battle'] = json_encode(['ok'=>true]+$bad);
+        file_put_contents($config, json_encode($answers));
+        [$value, $error] = $run($battle,'update');
+        shardCheck($value === null && $error instanceof UnexpectedValueException,'malformed/contradictory stage not accepted');
+    }
+    $line = ShardRegionControl::describe(['name'=>'Battle','state'=>'unknown','world'=>['clients'=>0]]);
+    shardCheck($line === 'Battle: Server status is unknown.', 'unknown status is not reported as stopped: '.$line);
+    $line = ShardRegionControl::describe(['state'=>'awake','listening'=>true,'world'=>[], 'operation'=>['action'=>'stop','phase'=>'waiting for the server to exit']]);
+    shardCheck($line === 'Server port is open. World readiness unknown. Last action: stop (waiting for the server to exit).','typed phase and readiness: '.$line);
     [$value, $error] = $run($barracks, 'restart');
     shardCheck($error instanceof UnexpectedValueException && str_contains($error->getMessage(), 'no JSON'), 'garbage output');
     $log = file($config.'.log', FILE_IGNORE_NEW_LINES);

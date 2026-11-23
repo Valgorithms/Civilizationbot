@@ -5,11 +5,37 @@ own worktree with its own port, `serverdata.txt`, IPC files and webhooks (see
 Civ13's `scripts/shard-group/README.md`). The bot treats each region as a normal
 game server entry and drives it with `scripts/shard-group/shard_group.py`.
 
-civ13.com's TDM is the first such group: shard group `tdm` with the always-on
-**Barracks** (region `barracks`, port 1714, server key `tdm`) and the **battle**
-world (region `battle`, port 1715, server key `tdmbattle`). `bot.php` switches
-to it by itself once `/home/civ13/tdm.json` exists; until then the single
-`civ13-tdm.service` server stays in use.
+For civ13.com's TDM, `bot.php` reads one validated `/home/civ13/tdm.json`
+snapshot. The `tdm` entry follows the configured front door (Barracks or
+gateway), and `tdmbattle` follows the configured Battle region. Each uses its
+actual region directory and port. Battle keeps the public TDM Play link and
+does not produce another aggregate Play button. A genuinely absent group file
+keeps legacy single-world status only; an invalid configured file disables
+the TDM integrations rather than falling back to the wrong service.
+
+The official TDM aliases are **status-only for lifecycle management**.
+`tdmrestart` previously acted on the front door, including the gateway.
+`tdmbattlerestart` only acted on Battle. The old host, kill, restart, update,
+and map-swap handlers now refuse for these entries across text, slash, and
+panel surfaces. Use the maintainer runbook, not a Discord alias.
+
+### TDM operator checks
+
+1. Fast-forward the configured shared TDM source checkout, and reload the
+   `civ13-tdm-host` service. This refreshes the coordinator, not the separate
+   running world processes.
+2. Use the coordinator's group `restart` **without a region argument**.
+   Expect all intended non-gateway regions under `accepted`. When a gateway
+   exists, the coordinator deliberately lists it under `refused` with the
+   reason that it stays on its port. Treat any other refusal as a failure,
+   even when the aggregate reply says `ok`.
+3. Check the worlds and hub listing after they finish. An accepted operation
+   is queued, not proof they are ready. Restart the gateway by name only
+   when deliberately updating the front door.
+
+The bot itself is updated by fast-forwarding its own checkout and restarting
+the operator-managed `civilizationbot` unit. The bot no longer runs these
+updates or restarts through its retired maintenance commands.
 
 ## Host controls
 
@@ -36,8 +62,8 @@ DreamDaemon itself.
 | Discord | shard_group.py |
 | --- | --- |
 | `<key>host`, panel Host | `start --region=<id>` |
-| `<key>kill`, panel Kill | `stop --region=<id>` (or `kill`, see above), announced in OOC first |
-| `<key>restart`, panel Restart, `/restart_server` | `restart --region=<id>`, announced in OOC first |
+| `<key>kill`, panel Kill | `stop --region=<id>` (or `kill`, see above) |
+| `<key>restart`, panel Restart, `/restart_server` | `restart --region=<id>` |
 | `<key>update` | `update --region=<id>` |
 | `<key>hoststatus` | `status --region=<id>`: region name, port, world ready, players, last action, map |
 | `<key>activity` (Ambassador, Admin) | none: reads `<group root>/player-activity-weekly.json` from the server's `region_group` |
@@ -57,7 +83,13 @@ per ckey whenever that ckey's karma changes; the bot never opens its database.
 start, stop, restart and update are accepted within seconds and finish in the
 script's detached worker; `hoststatus` shows progress. The bot runs as the same
 user as the group (`civ13`), so no sudo is involved. Roles are the same as for
-[gaia_host](gaia-host.md).
+[gaia_host](gaia-host.md). A frozen region may accept an update as build staging;
+its running version has not changed. The table describes explicitly managed
+non-TDM entries that have not retired their legacy aliases.
+
+Awards belong to the world that writes them. Do not use an empty awards file
+on the gateway as a substitute for the awarding world. Missing awards now
+leave the ranking unchanged rather than creating a placeholder or wiping it.
 
 ## Following the front door (`follow_front_door`)
 

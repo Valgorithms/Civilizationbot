@@ -24,7 +24,6 @@ class Stop extends Civ13MessageCommand
      */
     public function __invoke(Message $message, string $command, array $message_filtered): PromiseInterface
     {
-        return $message->react('🛑')
-            ->then(fn () => $this->civ13->stop());
+        return $message->reply('Bot self-maintenance is retired. Use the operator-managed deployment procedure or service supervisor.');
     }
 }

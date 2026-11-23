@@ -213,9 +213,14 @@ namespace {
             $timerCount = count($loop->timers);
             $callback = (new ReflectionProperty(Discord\Helpers\RegisteredCommand::class, 'callback'))->getValue($discord->commands()[$name]);
             $callback($interaction);
-            check(count($interaction->responses) === 1 && str_contains($interaction->responses[0][0], 'unavailable') && $interaction->responses[0][1], 'Maintenance command did not fail closed: '.$name);
+            check(count($interaction->responses) === 1 && str_contains($interaction->responses[0][0], 'operator-managed') && $interaction->responses[0][1], 'Maintenance command did not fail closed: '.$name);
             check(count($loop->timers) === $timerCount, 'Maintenance command scheduled background work: '.$name);
         }
+        // Render the actual bot staff panel without invoking or sending its interactions.
+        $panel = (new ReflectionMethod(Civ13\Panels::class, 'staffPanel'))->invoke($bot->panels);
+        $panelJson = json_encode($panel->getComponents(), JSON_THROW_ON_ERROR);
+        check(!str_contains($panelJson, '"sp_pull"') && !str_contains($panelJson, '"sp_composer"'), 'Retired maintenance buttons rendered');
+        check(str_contains($panelJson, 'operator-managed') && str_contains($panelJson, '"sp_refresh"'), 'Staff panel no longer provides guidance or preserves current controls');
         (new ReflectionMethod(Civ13\HttpServiceManager::class, '__generateEndpoints'))->invoke($bot->httpServiceManager);
         if ($hosted) {
             check(isset($discord->globalCommands->saved['refreshverification'], $discord->commands()['refreshverification']), 'Missing refresh command/listener');
@@ -249,20 +254,44 @@ namespace {
         $sentinel = "OFFLINE_TEST_SENTINEL=keep-me\n";
         file_put_contents($dir.'/.env', $sentinel);
         $bot->timers['restart_pending'] = $loop->addTimer(99, static function (): void { throw new RuntimeException('Unexpected restart'); });
-        foreach (['/reset', '/githubupdated', '/pull', '/update', '/restart', '/kill', '/clearenv', '/cancelupdaterestart'] as $endpoint) {
+        foreach (['/reset', '/pull', '/update', '/restart', '/kill', '/clearenv', '/cancelupdaterestart'] as $endpoint) {
             $timersBefore = $loop->timers;
             $botTimersBefore = $bot->timers;
             $lookupsBefore = $discord->channelLookups;
             $handler = $bot->httpServiceManager->httpHandler->offsetGet($endpoint, 'handlers');
             check(is_callable($handler), 'Missing maintenance endpoint: '.$endpoint);
             $response = $handler(new React\Http\Message\ServerRequest('POST', 'http://127.0.0.1'.$endpoint), $endpoint, true);
-            check($response->getStatusCode() === 503 && str_contains((string) $response->getBody(), 'unavailable'), 'Maintenance endpoint reported success: '.$endpoint);
+            check($response->getStatusCode() === 410 && str_contains((string) $response->getBody(), 'operator-managed'), 'Maintenance endpoint reported success: '.$endpoint);
             check($loop->timers === $timersBefore && $bot->timers === $botTimersBefore, 'Maintenance endpoint changed timers: '.$endpoint);
             check($discord->channelLookups === $lookupsBefore, 'Maintenance endpoint attempted Discord notification: '.$endpoint);
             check(file_get_contents($dir.'/.env') === $sentinel, 'Maintenance endpoint changed synthetic environment file: '.$endpoint);
         }
+        // Call the real HTTP router with inert input so both whitelist and signature admission are exercised.
+        $router = $bot->httpServiceManager->httpHandler;
+        $request = static fn (string $endpoint, array $headers = [], string $body = '', string $ip = '203.0.113.8'): React\Http\Message\ServerRequest =>
+            new React\Http\Message\ServerRequest('POST', 'http://127.0.0.1'.$endpoint, $headers, $body, '1.1', ['REMOTE_ADDR' => $ip]);
+        check($router->handle($request('/reset'))->getStatusCode() === 403, 'Legacy whitelist admission broadened');
+        $timersBefore = $loop->timers;
+        $botTimersBefore = $bot->timers;
+        $lookupsBefore = $discord->channelLookups;
+        $body = '{"fixture":true}';
+        // A synthetic secret in this subprocess only. No environment file or real signing material is loaded.
+        putenv('github_secret=offline-maintenance-fixture');
+        try {
+            check($router->handle($request('/githubupdated', [], $body, '203.0.113.9'))->getStatusCode() === 401, 'Unsigned maintenance webhook admitted');
+            $signature = 'sha256='.hash_hmac('sha256', $body, 'offline-maintenance-fixture');
+            $headers = ['X-Hub-Signature-256' => $signature];
+            check($router->handle($request('/githubupdated', $headers, $body.' ', '203.0.113.10'))->getStatusCode() === 401, 'Changed bytes admitted');
+            $response = $router->handle($request('/githubupdated', $headers, $body, '203.0.113.11'));
+            check($response->getStatusCode() === 410 && str_contains((string)$response->getBody(), 'operator-managed'), 'Valid signed webhook did not formally retire');
+        } finally {
+            putenv('github_secret');
+        }
+        check($loop->timers === $timersBefore && $bot->timers === $botTimersBefore, 'Webhook altered timers');
+        check($discord->channelLookups === $lookupsBefore, 'Webhook attempted a Discord channel lookup');
+        check($router->handle($request('/ping', [], '', '203.0.113.12'))->getStatusCode() === 200, 'Unrelated read-only endpoint changed');
         check(!$rejections, 'Bootstrap promise rejected: '.($rejections ? (string) $rejections[0] : ''));
-        echo ($unconfigured ? "UNCONFIGURED " : "CONFIGURED ")."PASS real init and delayed Slash/Panels bootstrap; global/guild commands and listeners; eight HTTP maintenance guards; no network or loop run\n";
+        echo ($unconfigured ? "UNCONFIGURED " : "CONFIGURED ")."PASS real init and delayed Slash/Panels bootstrap; global/guild commands and listeners; legacy HTTP retirement and admission; no network or loop run\n";
     } finally {
         putenv($oldProfile === false ? 'CIVILIZATIONBOT_PROFILE' : 'CIVILIZATIONBOT_PROFILE='.$oldProfile);
         restore_error_handler();

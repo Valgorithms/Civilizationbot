@@ -52,7 +52,7 @@ final class LauncherManagement
         $action = $confirm ? ($parts[1] ?? '') : ($parts[0] ?? '');
         if ($action === 'acknowledge' && count($parts) === ($confirm ? 3 : 1)) { return resolve($this->acknowledge($key, $confirm ? $parts[2] : null, $now)); }
         if (!in_array($action, $this->policy['actions'], true) || count($parts) !== ($confirm ? 3 : 1)) { return resolve('Unsupported or disabled action. Use manage help; arbitrary arguments are not supported.'); }
-        if ($this->busy || ($this->uncertain && $action !== 'status')) { return resolve('Management is busy or an earlier outcome is unknown. Inspect the host receipt locally, then clear the block with {$this->command} acknowledge; no automatic retry will occur.'); }
+        if ($this->busy || ($this->uncertain && $action !== 'status')) { return resolve("Management is busy or an earlier outcome is unknown. Inspect the host receipt locally, then clear the block with {$this->command} acknowledge; no automatic retry will occur."); }
         if ($action !== 'status') {
             if (!$confirm) {
                 $token = bin2hex(random_bytes(12));
@@ -103,7 +103,8 @@ final class LauncherManagement
     private function unknown(string $action): string
     {
         $this->busy = false;
-        if ($action !== 'status') { $this->uncertain = true; }
+        if ($action === 'status') { return 'No verified host status. This does not mean the world stopped.'; }
+        $this->uncertain = true;
         return "No verified host result. Outcome may be unknown; inspect the local host receipt before retrying. New mutations are blocked until an operator runs {$this->command} acknowledge. No raw logs are disclosed.";
     }
 
@@ -114,6 +115,7 @@ final class LauncherManagement
         if (!is_array($data) || !is_bool($data['ok'] ?? null)) { throw new \UnexpectedValueException('Invalid host envelope'); }
         // Host prechecks refuse before acting, except force-restart: it can kill the world and then have its start refused.
         if (!$data['ok']) {
+            ShardRegionControl::regionRefusal($data, $this->region);
             if ($action === 'force-restart') {
                 $this->uncertain = true;
                 return "Host refused the request after it may have stopped the world. Inspect the local receipt and status, then clear the block with {$this->command} acknowledge.";
@@ -122,24 +124,25 @@ final class LauncherManagement
         }
         if ($result['exit_code'] !== 0) { throw new \UnexpectedValueException('Inconsistent exit'); }
         if ($action === 'status') {
-            $own = $data['regions'][$this->region] ?? null;
-            if (!is_array($own)) { throw new \UnexpectedValueException('Missing region'); }
+            $own = ShardRegionControl::singleRegionRecord($data['regions'] ?? null, $this->region);
             $state = in_array($own['state'] ?? '', ['awake', 'asleep', 'cold', 'stopped', 'frozen', 'running'], true) ? $own['state'] : 'unknown';
-            $clients = $own['world']['clients'] ?? null;
-            $players = is_int($clients) && $clients >= 0 ? (string)$clients : 'unknown';
-            $phase = $own['operation']['phase'] ?? null;
-            $phase = in_array($phase, ['accepted', 'done', 'failed', 'starting', 'started', 'stopping', 'stopped', 'building', 'fetching', 'saving', 'compiling', 'compiled', 'pulling', 'checking save', 'backing up', 'switching', 'rolling back', 'checking out', 'handed over'], true) ? $phase : 'unknown';
-            $stage = $own['stage']['phase'] ?? null;
-            $stage = in_array($stage, ['accepted', 'checking for updates', 'current', 'ready', 'preparing', 'compiling', 'failed'], true) ? $stage : 'unknown';
+            $world = $own['world'] ?? null;
+            $clients = $world['clients'] ?? null;
+            $players = in_array($state, ['awake', 'running'], true) && empty($world['error']) && is_int($clients) && $clients >= 0 ? (string)$clients : 'unknown';
+            $phase = ShardRegionControl::phaseLabel($own['operation']['phase'] ?? null);
+            $stage = ShardRegionControl::phaseLabel($own['stage']['phase'] ?? null, true);
             $pending = is_bool($own['stage']['pending'] ?? null) ? ($own['stage']['pending'] ? 'yes' : 'no') : 'unknown';
-            $busy = is_bool($own['busy'] ?? null) ? ($own['busy'] ? 'yes' : 'no') : 'unknown';
+            $busy = $state !== 'unknown' && is_bool($own['busy'] ?? null) ? ($own['busy'] ? 'yes' : 'no') : 'unknown';
             return "Region {$this->region}: state {$state}; players {$players}; busy {$busy}; lifecycle phase {$phase}; stage phase {$stage}, pending {$pending}. Status is not proof of deployment acceptance.";
         }
         $synchronous = in_array($action, ['kill', 'freeze', 'thaw'], true);
-        $own = $data[$synchronous ? 'done' : 'accepted'][$this->region] ?? null;
-        if (!is_array($own) || isset($data['refused'][$this->region])) { throw new \UnexpectedValueException('Missing/contradictory region receipt'); }
+        $own = ShardRegionControl::mutationReceipt($data, $synchronous ? 'done' : 'accepted', $this->region);
         if ($synchronous && ($own[match ($action) { 'kill' => 'killed', 'freeze' => 'frozen', default => 'thawed' }] ?? null) === true) {
             return "Region {$this->region}: host reports {$action} completed. Gameplay has not been verified.";
+        }
+        if (ShardRegionControl::isFrozenUpdateStage($action, $own)) {
+            $stage = ($own['already_staging'] ?? false) ? 'an existing staged build' : 'a staged build';
+            return "Region {$this->region}: update accepted via {$stage}, not completed. The world was asleep. Check status and the host receipt before assuming it is ready.";
         }
         $expected = $action === 'force-restart' || $action === 'thaw' ? 'start' : $action;
         if (($own['accepted'] ?? null) !== true || ($own['action'] ?? null) !== $expected || ($action === 'thaw' && ($own['cold_start'] ?? null) !== true)) { throw new \UnexpectedValueException('Mismatched receipt'); }
