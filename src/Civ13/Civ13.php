@@ -1337,6 +1337,23 @@ class Civ13
 
         return $builder;
     }
+    /**
+     * Servers that get a Play button on the aggregate status, at most 25 (Discord's limit). A shard (e.g. TDM
+     * Battle) shares its parent's Play link on its own round embed, so the aggregate shows one button per front door.
+     *
+     * @param  iterable<GameServer> $gameservers
+     * @return list<GameServer>
+     */
+    public static function aggregatePlayServers(iterable $gameservers): array
+    {
+        $servers = [];
+        foreach ($gameservers as $gameserver) {
+            if ($gameserver->playLink === null || $gameserver->shardOf !== '') { continue; }
+            $servers[] = $gameserver;
+            if (count($servers) >= 25) { break; }
+        }
+        return $servers;
+    }
     /** A message builder with one status embed per enabled Civ13 and Civ14 game server. */
     public function createServerstatusEmbed(): MessageBuilder
     {
@@ -1369,8 +1386,7 @@ class Civ13
         // At most five rows of five URL buttons; status embeds/content remain unchanged.
         $row = null;
         $count = 0;
-        foreach ($this->enabled_gameservers as $gameserver) {
-            if ($gameserver->playLink === null || $count >= 25) { continue; }
+        foreach (self::aggregatePlayServers($this->enabled_gameservers) as $gameserver) {
             if ($count % 5 === 0) {
                 $row = \Discord\Builders\Components\ActionRow::new();
                 $builder->addComponent($row);

@@ -485,7 +485,9 @@ if (is_file($tdm_group)) {
         'shard_group' => $tdm_shard_group('battle'),
         'shard_of' => 'tdm',
     ]);
-    unset($civ13_server_settings['tdmbattle']['region_group'], $civ13_server_settings['tdmbattle']['play']); // one TDM Play button, entering through the front door
+    // Battle keeps the inherited TDM Play link, so its round embed in the TDM channel enters through the front door
+    // too; the aggregate status skips shards (shard_of), so it still shows one TDM button.
+    unset($civ13_server_settings['tdmbattle']['region_group']);
 }
 foreach ($civ13_server_settings as $key => $value) {
     $civ13_server_settings[$key]['key'] = $key;
