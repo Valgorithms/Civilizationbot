@@ -1178,7 +1178,7 @@ class GameServer
     /** Success is acknowledged only after the supervisor supplies a bound completion result. */
     private function nativeRequest(string $action, ?Message $message): PromiseInterface
     {
-        if ($this->nativeLifecycle === null) { return reject(new \RuntimeException('Native lifecycle controls are unavailable on Windows')); }
+        if ($this->nativeLifecycle === null) { throw new \RuntimeException('Native lifecycle controls are unavailable on Windows'); }
         return $this->nativeLifecycle->request($action)->then(static function (array $result) use ($message): mixed {
             // The action is already accepted; a failed reaction must not report it as failed.
             $message?->react('👍')->then(null, static fn (): null => null);
