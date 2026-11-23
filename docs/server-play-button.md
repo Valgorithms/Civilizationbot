@@ -21,8 +21,10 @@ BYOND target is
 Do not map a linked region's Play button to its internal/direct endpoint.
 The launcher gate-down fix ([Civ13 #3869](https://github.com/Civ13/Civ13/pull/3869))
 explains why a reachable region is not a substitute for an unavailable gate.
-The production `bot.php` sets TDM and Persistence; `tdmbattle` drops the inherited
-Play link so the aggregate status shows one TDM button. A portable profile adds
+The production `bot.php` sets TDM and Persistence. `tdmbattle` keeps the inherited
+TDM link, so the Battle round embed in the TDM channel also has a Play button that
+enters through the front door; the aggregate status skips shards (`shard_of`), so it
+still shows one TDM button. A portable profile adds
 `play` to its server entry the same way.
 If a region has no supported public entry page, omit its Play configuration.
 

@@ -35,4 +35,18 @@ for ($i = 0; $i < 2; $i++) {
 }
 $other = ServerPlayLink::fromConfig(['url' => 'https://civ13.com/tdm/'], 'tdm', 'byond');
 check($other->url !== $play->url, 'Distinct mode page');
+// TDM: Battle (shard_of tdm) inherits the front door's link, so its round embed has Play; the aggregate shows one.
+$make = function (string $name, ?ServerPlayLink $link, string $shardOf = '') {
+    $s = (new ReflectionClass(Civ13\GameServer::class))->newInstanceWithoutConstructor();
+    (fn () => $this->name = $name)->call($s); // readonly: set from the class scope
+    $s->playLink = $link; $s->shardOf = $shardOf;
+    return $s;
+};
+$tdm = $make('TDM', $other);
+$battle = $make('TDM Battle', $other, 'tdm');
+$wire = json_decode(json_encode($battle->addPlayButton(MessageBuilder::new()), JSON_THROW_ON_ERROR), true);
+check(($wire['components'][0]['components'][0]['url'] ?? null) === 'https://civ13.com/tdm/', 'TDM Battle round embed has the TDM Play button');
+$aggregate = Civ13\Civ13::aggregatePlayServers([$tdm, $battle, $make('Persistence', $play), $make('Nomads', null)]);
+check(array_map(fn ($s) => $s->name, $aggregate) === ['TDM', 'Persistence'], 'Aggregate status: one TDM button, shards and unconfigured skipped');
+check(count(Civ13\Civ13::aggregatePlayServers(array_fill(0, 30, $tdm))) === 25, 'Aggregate status capped at 25');
 echo "Play link contracts passed: $count assertions\n";
