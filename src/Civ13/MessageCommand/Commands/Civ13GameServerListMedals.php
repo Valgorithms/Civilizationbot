@@ -31,8 +31,9 @@ class Civ13GameServerListMedals extends Civ13GameServerMessageCommand
      */
     public function __invoke(Message $message, string $command, array $message_filtered): PromiseInterface
     {
-        if (! @touch($awardsPath = $this->gameserver->basedir.Civ13::awards)) {
-            return reject(new MissingSystemPermissionException("Unable to access `{$awardsPath}`"));
+        $awardsPath = $this->gameserver->basedir.Civ13::awards;
+        if (! is_file($awardsPath) || ! is_readable($awardsPath)) {
+            return reject(new MissingSystemPermissionException('No readable awards source is configured for this world.'));
         }
 
         return $message->reply(

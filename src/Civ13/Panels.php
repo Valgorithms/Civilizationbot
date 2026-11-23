@@ -40,7 +40,7 @@ use function React\Promise\resolve;
  * shouldn't.
  *
  * Staff: host / restart / kill each game server, panic bunker, ban & admin list
- * refreshes, log cleanup, `git pull` / `composer update`.
+ * refreshes and log cleanup. Bot deployment is operator-owned.
  * Player: verification status + a "Verify" modal, role resync, personal rank and
  * ban lookup, live server status, campaign faction join.
  *
@@ -177,12 +177,7 @@ final class Panels
             }, 'Log cleanup queued.')),
             $this->staffButton(Button::primary(), '↻ Refresh', 'sp_refresh', fn (Interaction $i) => $i->updateMessage($this->staffPanel())),
         ]);
-        if (OSFunctions::legacyShellAvailable()) {
-            $components[] = ActionRow::new()->addComponents([
-                $this->staffButton(Button::secondary(), '⬇️ Git Pull', 'sp_pull', fn (Interaction $i) => $this->bg($i, fn () => OSFunctions::execInBackground('git pull'), 'Pulling latest code…')),
-                $this->staffButton(Button::secondary(), '📦 Composer Update', 'sp_composer', fn (Interaction $i) => $this->bg($i, fn () => OSFunctions::execInBackground('composer update'), 'Updating dependencies…')),
-            ]);
-        }
+        $components[] = TextDisplay::new('-# Bot self-maintenance is retired. Use the operator-managed deployment procedure or service supervisor.');
         $components[] = Separator::new();
         $components[] = TextDisplay::new('-# Destructive actions run immediately. Every button re-checks your permission.');
 

@@ -28,7 +28,12 @@ class Civ13GameServerUpdate extends Civ13GameServerMessageCommand
     public function __invoke(Message $message, string $command, array $message_filtered): PromiseInterface
     {
         return $message->react('⏱️')->then(fn () => $this->gameserver->Update($message))->then(
-            null,
+            function (mixed $receipt) use ($message): PromiseInterface|null {
+                if (is_array($receipt) && ($receipt['action'] ?? null) === 'stage') {
+                    return $this->civ13->reply($message, 'Build staging accepted for the sleeping region. The running version has not changed.');
+                }
+                return null;
+            },
             fn (\Throwable $error): PromiseInterface => $this->civ13->reply($message, $error->getMessage())
         );
     }

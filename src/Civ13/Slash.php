@@ -173,22 +173,10 @@ class Slash
             if ($command = $commands->get('name', 'pull')) {
                 $commands->delete($command);
             }
-            /*if (! $commands->get('name', 'pull')) $this->save($commands, new Command($this->discord, [
-                    'name'                       => 'pull',
-                    'description'                => "Update the bot's code",
-                    'contexts'                   => [Interaction::CONTEXT_TYPE_GUILD],
-                    'default_member_permissions' => (string) new RolePermission($this->discord, ['view_audit_log' => true]),
-            ]));*/
 
             if ($command = $commands->get('name', 'update')) {
                 $commands->delete($command);
             }
-            /*if (! $commands->get('name', 'update')) $this->save($commands, new Command($this->discord, [
-                    'name'                       => 'update',
-                    'description'                => "Update the bot's dependencies",
-                    'contexts'                   => [Interaction::CONTEXT_TYPE_GUILD],
-                    'default_member_permissions' => (string) new RolePermission($this->discord, ['view_audit_log' => true]),
-            ]));*/
 
             if ($command = $commands->get('name', 'stats')) {
                 $commands->delete($command);
@@ -586,40 +574,14 @@ class Slash
             }
         });
     }
-    /** Registers every `listenCommand` handler for the interaction commands (git pull, verify, etc.). */
+    /** Registers handlers for current interaction commands and refusal of retired commands. */
     private function __declareListeners(): void
     {
-        $this->discord->listenCommand('pull', function (Interaction $interaction): PromiseInterface {
-            if (!OSFunctions::legacyShellAvailable()) {
-                return $this->respondWithMessage($interaction, 'This maintenance command is unavailable in Windows/portable mode.', true);
-            }
-            $this->logger->info('[GIT PULL]');
-            OSFunctions::execInBackground('git pull');
-            $this->civ13->loop->addTimer(5, function () {
-                if ($channel = $this->discord->getChannel($this->civ13->channel_ids['staff_bot'])) {
-                    $this->civ13->sendMessage($channel, 'Forcefully moving the HEAD back to origin/main... (2/3)');
-                }
-                OSFunctions::execInBackground('git reset --hard origin/main');
-            });
-            $this->civ13->loop->addTimer(10, function () {
-                if ($channel = $this->discord->getChannel($this->civ13->channel_ids['staff_bot'])) {
-                    $this->civ13->sendMessage($channel, 'Updating code from GitHub... (3/3)');
-                }
-                OSFunctions::execInBackground('git pull');
-            });
-
-            return $this->respondWithMessage($interaction, 'Updating code from GitHub...');
-        });
-        
-        $this->discord->listenCommand('update', function (Interaction $interaction): PromiseInterface {
-            if (!OSFunctions::legacyShellAvailable()) {
-                return $this->respondWithMessage($interaction, 'This maintenance command is unavailable in Windows/portable mode.', true);
-            }
-            $this->logger->info('[COMPOSER UPDATE]');
-            OSFunctions::execInBackground('composer update');
-
-            return $this->respondWithMessage($interaction, 'Updating dependencies...');
-        });
+        foreach (['pull', 'update'] as $retired) {
+            $this->discord->listenCommand($retired, fn (Interaction $interaction): PromiseInterface =>
+                $this->respondWithMessage($interaction, 'Bot self-maintenance is retired. Use the operator-managed deployment procedure or service supervisor.', true)
+            );
+        }
         $this->discord->listenCommand('restart_server', function (Interaction $interaction): PromiseInterface {
             if (! isset($interaction->data->options['server'])) {
                 return $this->respondWithMessage($interaction, Civ13::createBuilder()->setContent('No server specified'));

@@ -14,7 +14,6 @@ declare(strict_types=1);
 namespace Civ13\MessageCommand\Commands;
 
 use Civ13\MessageCommand\Civ13MessageCommand;
-use Civ13\OSFunctions;
 use Discord\Parts\Channel\Message;
 use React\Promise\PromiseInterface;
 
@@ -28,13 +27,6 @@ class PullCivRepository extends Civ13MessageCommand
      */
     public function __invoke(Message $message, string $command, array $message_filtered): PromiseInterface
     {
-        if (!OSFunctions::legacyShellAvailable()) {
-            return $message->reply('This maintenance command is unavailable in Windows/portable mode.');
-        }
-        return $message->react(
-            (is_dir($fp = $this->civ13->gitdir) && OSFunctions::execInBackground("git -C {$fp} pull"))
-            ? '👍'
-            : '🔥'
-        );
+        return $message->reply('Shared game-repository pulls are retired in Discord. Use the host operator runbook or service supervisor.');
     }
 }

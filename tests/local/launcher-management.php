@@ -41,6 +41,38 @@ foreach (array_diff(LauncherManagement::ACTIONS,['status']) as $action) {
     check($calls[array_key_last($calls)][1]===($action==='force-restart'?210:60),'bounded timeout');
     check(str_contains(line($m->handle('11','22','33',$confirmation)),'invalid'),'no replay');
 }
+$frozenStage = ['accepted'=>true,'action'=>'stage','state'=>'asleep','operation'=>str_repeat('a',32)];
+$alreadyStaging = ['accepted'=>true,'action'=>'stage','state'=>'asleep','already_staging'=>true];
+foreach ([$frozenStage, $alreadyStaging] as $own) {
+    $m=$make(); $c=confirm($m,'update'); $response=['ok'=>true,'accepted'=>['gaia'=>$own],'refused'=>[]];
+    $text=line($m->handle('11','22','33',$c));
+    check(str_contains($text,'staged build, not completed') && str_contains($text,'asleep'),'frozen update correctly reports pending stage');
+    check(str_contains(line($m->handle('11','22','33','start')),'Confirm with'),'validated stage does not latch unknown');
+}
+foreach ([
+    ['accepted'=>['gaia'=>array_replace($frozenStage,['state'=>'awake'])]],
+    ['accepted'=>['gaia'=>array_replace($frozenStage,['operation'=>'oops'])]],
+    ['accepted'=>['gaia'=>$frozenStage+['already_staging'=>true]]],
+    ['accepted'=>['other'=>$frozenStage]],
+    ['accepted'=>['gaia'=>$frozenStage+['region'=>'other']]],
+    ['accepted'=>['gaia'=>$frozenStage,'other'=>$frozenStage]],
+    ['accepted'=>['gaia'=>$frozenStage],'refused'=>['gaia'=>null]],
+    ['accepted'=>['gaia'=>$frozenStage],'done'=>['gaia'=>['killed'=>true]]],
+] as $bad) {
+    $m=$make(); $c=confirm($m,'update'); $response=['ok'=>true]+$bad;
+    check(str_contains(line($m->handle('11','22','33',$c)),'No verified host result'),'malformed/contradictory update not accepted');
+    check(str_contains(line($m->handle('11','22','33','start')),'gaiamanage acknowledge'),'bad update latches region and provides recovery command');
+}
+$m=$make(); $c=confirm($m,'restart'); $response=['ok'=>true,'accepted'=>['gaia'=>$frozenStage]];
+check(str_contains(line($m->handle('11','22','33',$c)),'No verified host result'),'stage cannot substitute for restart');
+foreach (['warning players (20 s), then saving', 'waiting for the server to exit', 'building the update beside the running world'] as $phase) {
+    $response=['ok'=>true,'regions'=>['gaia'=>['state'=>'awake','operation'=>['phase'=>$phase],'stage'=>['phase'=>"waiting for another region's compile"]]]];
+    $text=line($make()->handle('11','22','33','status'));
+    check(str_contains($text,'lifecycle phase '.$phase) && str_contains($text,"stage phase waiting for another region's compile"),'real bounded phases are visible');
+}
+$response=['ok'=>true,'regions'=>['gaia'=>['state'=>'unknown','busy'=>false,'world'=>['clients'=>0],'operation'=>['phase'=>'SECRET /private/path']]]];
+$text=line($make()->handle('11','22','33','status'));
+check(str_contains($text,'state unknown; players unknown; busy unknown; lifecycle phase unknown') && !str_contains($text,'SECRET'),'unknown host status stays unknown and unsafe phase text is not shown');
 $m = $make(); $c = confirm($m,'thaw'); $response=['ok'=>true,'done'=>['gaia'=>['accepted'=>true,'action'=>'start','cold_start'=>true]]];
 check(str_contains(line($m->handle('11','22','33',$c)),'accepted, not completed'),'cold thaw is asynchronous');
 $m=$make(); $c=confirm($m,'stop'); $now+=60;

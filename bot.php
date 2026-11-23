@@ -446,48 +446,14 @@ $civ13_server_settings = [ // Server specific settings, listed in the order in w
         'attack' => '1139614643954921593',
     ],
 ];
-// Sharded TDM (docs/shard-group.md): the always-on Barracks world (region "barracks", port 1714) and the battle
-// world (region "battle", port 1715) of Civ13 shard group "tdm", both driven by shard_group.py. Until the group's
-// config exists the single civ13-tdm.service server above stays in use, so this file can ship before the move.
-$tdm_group = '/home/civ13/tdm.json';
-if (is_file($tdm_group)) {
-    // The script lives in the group's own Civ13 checkout ("repository" in tdm.json), which the host keeps current.
-    $tdm_repository = json_decode((string) file_get_contents($tdm_group), true)['repository'] ?? null;
-    $tdm_script = is_string($tdm_repository) && $tdm_repository !== '' ? rtrim($tdm_repository, '/').'/scripts/shard-group/shard_group.py' : '';
-    $tdm_shard_group = static fn (string $region): array => [
-        'enabled' => true,
-        'python' => '/usr/bin/python3',
-        'script' => $tdm_script, // empty or missing: host controls refuse with the reason
-        'config' => $tdm_group,
-        'region' => $region,
-        'kill' => 'stop', // save if the world saves, then stop; 'kill' forces it down without saving
-    ];
-    unset($civ13_server_settings['tdm']['systemd']);
-    // "tdm" is the group's front door, the world on port 1714 that posts to /webhook/tdm: the Barracks, or the
-    // gateway once `shard_group.py set-gate` puts one in front. Follow it like a portable profile's
-    // follow_front_door (basedir, and the shared front-door/SQL/admins.txt), so a gate move needs only a bot
-    // restart. An unreadable group file or a front door that is not set up keeps the Barracks.
-    $tdm_front = \Civ13\PortableProfile::followFrontDoor(['region_group' => $tdm_group, 'basedir' => '/home/civ13/tdm/barracks']);
-    $civ13_server_settings['tdm']['basedir'] = $tdm_front['basedir'];
-    if (isset($tdm_front['admin_file'])) {
-        $civ13_server_settings['tdm']['admin_file'] = $tdm_front['admin_file'];
-    }
-    $civ13_server_settings['tdm']['shard_group'] = $tdm_shard_group(basename($tdm_front['basedir']));
-    $civ13_server_settings['tdm']['region_group'] = $tdm_group; // the player-count channel counts every region
-    // Battle posts to /webhook/tdmbattle and shares the TDM channels. It never renames the player-count channel
-    // (the front door counts it) but keeps its own round embed there; Discord OOC goes to the front door only,
-    // which shares it with the other worlds in game (Civ13 region OOC).
-    $civ13_server_settings['tdmbattle'] = array_merge($civ13_server_settings['tdm'], [
-        'supported' => false, // hidden from the hub
-        'name' => 'TDM Battle',
-        'port' => '1715',
-        'basedir' => '/home/civ13/tdm/battle',
-        'shard_group' => $tdm_shard_group('battle'),
-        'shard_of' => 'tdm',
-    ]);
-    // Battle keeps the inherited TDM Play link, so its round embed in the TDM channel enters through the front door
-    // too; the aggregate status skips shards (shard_of), so it still shows one TDM button.
-    unset($civ13_server_settings['tdmbattle']['region_group']);
+// Use one validated snapshot for the official front door and Battle. A configured
+// group that cannot be read must never put the old single-world service back in use.
+try {
+    $civ13_server_settings = array_replace($civ13_server_settings,
+        \Civ13\Local\TdmGroupConfiguration::profiles('/home/civ13/tdm.json', $civ13_server_settings['tdm']));
+} catch (\UnexpectedValueException $error) {
+    unset($civ13_server_settings['tdm'], $civ13_server_settings['tdmbattle']);
+    $logger->error('TDM integrations disabled: '.$error->getMessage());
 }
 foreach ($civ13_server_settings as $key => $value) {
     $civ13_server_settings[$key]['key'] = $key;

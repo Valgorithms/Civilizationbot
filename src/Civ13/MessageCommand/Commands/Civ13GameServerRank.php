@@ -35,14 +35,9 @@ class Civ13GameServerRank extends Civ13GameServerMessageCommand
                 return $this->civ13->reply($message, 'No ckey found for your Discord ID. Please verify your account first.');
             }
         }
-        if (! $this->gameserver->recalculateRanking()) {
-            return $this->civ13->reply($message, 'There was an error trying to recalculate ranking! The bot may be misconfigured.');
-        }
-        if (! $msg = $this->gameserver->getRank($ckey)) {
-            return $this->civ13->reply($message, 'There was an error trying to get your ranking!');
-        }
-
-        return $this->civ13->sendMessage($message->channel, $msg, 'rank.txt');
-        // return $this->civ13->reply($message, "Your ranking is too long to display.");
+        return $this->gameserver->recalculateRanking()->then(
+            fn () => $this->civ13->sendMessage($message->channel, $this->gameserver->getRank($ckey), 'rank.txt'),
+            fn () => $this->civ13->reply($message, 'Ranking is unavailable. Check which world owns the awards.')
+        );
     }
 }
