@@ -208,12 +208,24 @@ final class PortableProfile
         // An unconfigured existing profile may boot; attach refuses before any listener/I/O.
         if (array_keys($settings) === ['enabled']) { return ['enabled' => true]; }
         $keys = array_keys($settings); sort($keys);
-        if ($keys !== ['debounce_seconds','enabled','max_bytes','mode','refresh_timeout_seconds','targets']
+        if (!in_array($keys, [['debounce_seconds','enabled','max_bytes','mode','refresh_timeout_seconds','targets'],
+            ['debounce_seconds','enabled','gateway_proposals','max_bytes','mode','refresh_timeout_seconds','targets']], true)
             || ($options['verification_read_only'] ?? null) !== true || count($profile['servers'] ?? []) !== 1) {
             throw new \InvalidArgumentException('Explicit bounded read-only access synchronization required');
         }
         $key = array_key_first($profile['servers']); $server = $profile['servers'][$key];
         if (($server['enabled'] ?? null) !== true) { throw new \InvalidArgumentException('Access server must be explicitly enabled'); }
+        $gateway = $settings['gateway_proposals'] ?? false;
+        if (array_key_exists('gateway_proposals', $settings) && !is_bool($settings['gateway_proposals'])) {
+            throw new \InvalidArgumentException('Boolean gateway proposal flag required');
+        }
+        unset($settings['gateway_proposals']);
+        if ($gateway) {
+            if (($server['follow_front_door'] ?? null) !== true || !is_string($server['region_group'] ?? null)) {
+                throw new \InvalidArgumentException('Gateway proposals require a followed shard group');
+            }
+            $settings['gateway_group_config'] = $server['region_group'];
+        }
         $settings['server_key'] = $key; $settings['server_basedir'] = $server['basedir'];
         AccessFileSync::validateConfiguration($settings, $options['civ13_guild_id'] ?? '', $options['role_ids'] ?? [], $options['admin_file_sync']['enabled'] ?? false);
         return $settings;
