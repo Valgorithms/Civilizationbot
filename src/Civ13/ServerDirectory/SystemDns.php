@@ -14,6 +14,9 @@ declare(strict_types=1);
 namespace Civ13\ServerDirectory;
 
 use React\Dns\Config\Config;
+use React\EventLoop\LoopInterface;
+use React\Http\Browser;
+use React\Socket\Connector;
 
 /**
  * Reads the system DNS servers without React's WMIC lookup.
@@ -27,6 +30,22 @@ final class SystemDns
 {
     private static ?Config $cached = null;
 
+    /** Build an HTTP client without asking react/socket to run its WMIC lookup. */
+    public static function browser(LoopInterface $loop, array $options = []): Browser
+    {
+        return new Browser(new Connector($options + ['dns' => self::connectorConfig()], $loop), $loop);
+    }
+
+    /** Preserve react/socket's normal fallback if no system DNS servers are found. */
+    public static function connectorConfig(?callable $shell = null): Config
+    {
+        $config = self::load($shell);
+        if (!$config->nameservers) {
+            $config->nameservers[] = '8.8.8.8';
+        }
+        return $config;
+    }
+
     /** @param null|callable(string): (string|false|null) $shell injected by tests */
     public static function load(?callable $shell = null): Config
     {
@@ -36,9 +55,8 @@ final class SystemDns
         if (DIRECTORY_SEPARATOR !== '\\' && $shell === null) {
             return clone (self::$cached = Config::loadSystemConfigBlocking());
         }
-        $output = ($shell ?? 'shell_exec')(
-            'powershell -NoProfile -NonInteractive -Command "(Get-DnsClientServerAddress).ServerAddresses"'
-        );
+        $command = 'powershell -NoProfile -NonInteractive -Command "(Get-DnsClientServerAddress).ServerAddresses" 2>NUL';
+        $output = $shell !== null ? $shell($command) : (function_exists('shell_exec') ? shell_exec($command) : null);
         $config = new Config();
         $config->nameservers = self::parse(is_string($output) ? $output : '');
         if ($shell === null) {

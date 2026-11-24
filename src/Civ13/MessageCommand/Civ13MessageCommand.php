@@ -18,6 +18,7 @@ use Civ14\DynamicPropertyAccessorTrait;
 use Discord\Discord;
 use Discord\Parts\Channel\Message;
 use Psr\Log\LoggerInterface;
+use Civ13\ServerDirectory\SystemDns;
 use React\EventLoop\Loop;
 use React\EventLoop\LoopInterface;
 use React\Http\Browser;
@@ -72,7 +73,7 @@ class Civ13MessageCommand extends MessageCommand
     {
         return isset($this->civ13->browser)
             ? $this->civ13->browser
-            : new Browser($this->loop ?? Loop::get()); // Workaround for PHPUnit tests
+            : SystemDns::browser($this->loop ?? Loop::get()); // Workaround for PHPUnit tests
     }
 
     /** Backs the `discord` magic property. */
