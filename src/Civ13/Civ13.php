@@ -1010,7 +1010,8 @@ class Civ13
             $directories = [];
             foreach ($this->enabled_gameservers as $gameserver) {
                 $group = $gameserver->regionGroupFile();
-                if ($group === '') {
+                if ($group === '' || (($this->options['access_file_sync']['mode'] ?? null) === 'publish'
+                    && $group === ($this->options['access_file_sync']['gateway_group_config'] ?? null))) {
                     continue;
                 }
                 $directories[] = rtrim(str_replace('\\', '/', $gameserver->basedir), '/');
