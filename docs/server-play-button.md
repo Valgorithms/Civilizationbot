@@ -11,15 +11,20 @@ Configure an operator-verified public join page in that server's options:
 'play' => ['url' => 'https://civ13.com/tdm/'],
 ```
 
-For Persistence, use `https://civ13.github.io/persistence/` (Civ13/civ13.github.io
-#59, live). civ13.com serves only the TDM shortcut, not the GitHub Pages site.
-The expected BYOND target is
+For Persistence, use `https://civ13.com/persistence/`, the short link beside
+`https://civ13.com/nomads/` and `https://civ13.com/tdm/` on the civ13.com web
+server. `https://civ13.github.io/persistence/` still works as a fallback.
+Discord link buttons accept only `http(s)` URLs, so a `byond://` address cannot
+be the button itself; each short link opens BYOND on its target. The expected
+BYOND target is
 `byond://play.valzargaming.com:1714`, the Gaia gateway, not Rail Yard on 1715.
 Do not map a linked region's Play button to its internal/direct endpoint.
 The launcher gate-down fix ([Civ13 #3869](https://github.com/Civ13/Civ13/pull/3869))
 explains why a reachable region is not a substitute for an unavailable gate.
-The production `bot.php` sets TDM and Persistence; `tdmbattle` drops the inherited
-Play link so the aggregate status shows one TDM button. A portable profile adds
+The production `bot.php` sets TDM and Persistence. `tdmbattle` keeps the inherited
+TDM link, so the Battle round embed in the TDM channel also has a Play button that
+enters through the front door; the aggregate status skips shards (`shard_of`), so it
+still shows one TDM button. A portable profile adds
 `play` to its server entry the same way.
 If a region has no supported public entry page, omit its Play configuration.
 

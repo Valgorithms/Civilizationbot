@@ -42,6 +42,16 @@ class Verifier
     private ?HostedVerificationSnapshot $hosted = null;
     private ?\Closure $hostedTransportFetch = null;
     private ?\React\EventLoop\LoopInterface $hostedTransportLoop = null;
+    /** Hosted refresh period; well inside HostedVerificationSnapshot::FRESH_SECONDS so a normal refresh never lets the list lapse. */
+    public const HOSTED_REFRESH_SECONDS = 900;
+    /** Backoff after a failed hosted refresh, so one failed fetch (often at boot) does not leave the list unavailable until the next period. */
+    public const HOSTED_RETRY_SECONDS = [30, 60, 120, 300];
+    private int $hostedRetryAttempt = 0;
+    /** Last successful hosted list, kept on disk so chat names survive an unreachable host or a failed fetch at boot. */
+    public const DISPLAY_CACHE_FILE = 'hosted_verified_cache.json';
+    /** Display-only copy of the last good hosted list. Never consulted for access, admin or authority decisions. */
+    private ?CollectionInterface $displayCache = null;
+    private ?string $displayCacheHash = null;
     private const READ_ONLY_MESSAGE = 'Desktop uses the hosted Civilizationbot verification source. Complete verification with the primary bot.';
     public CollectionInterface $verified; // This probably needs a default value for Collection, maybe make it a Repository instead?
     public CollectionInterface $pending;
@@ -73,6 +83,7 @@ class Verifier
             $this->hosted = new HostedVerificationSnapshot();
             $this->provisional = new Collection([], 'ss13');
             $this->verified = new Collection([], 'discord');
+            $this->loadDisplayCache();
             $this->afterConstruct();
             return;
         }
@@ -498,7 +509,7 @@ class Verifier
     public static function plainMessage(string $message): string
     {
         $message = preg_replace('/<@[&!]?[0-9]+>/', 'staff', $message) ?? '';
-        $message = str_replace(['`', '**', PHP_EOL], ['', '', ' '], $message);
+        $message = str_replace(['`', '**', "\r\n", "\r", "\n"], ['', '', ' ', ' ', ' '], $message);
 
         return mb_substr(trim($message), 0, 400);
     }
@@ -1271,11 +1282,11 @@ class Verifier
         return null;
     }
 
-    /** The 30-minute periodic timer that re-checks verifier connectivity and replays provisional registrations when it comes back online. */
+    /** The periodic timer (15 minutes for hosted read-only, otherwise 30) that re-checks verifier connectivity and replays provisional registrations when it comes back online. */
     public function verifierStatusTimer(): TimerInterface
     {
         if (! isset($this->timers['verifier_status_timer'])) {
-            $this->timers['verifier_status_timer'] = $this->discord->getLoop()->addPeriodicTimer(1800, function () {
+            $this->timers['verifier_status_timer'] = $this->discord->getLoop()->addPeriodicTimer($this->readOnly ? self::HOSTED_REFRESH_SECONDS : 1800, function () {
                 if ($this->readOnly) {
                     $this->refreshHosted();
                     return;
@@ -1363,6 +1374,7 @@ class Verifier
             : HostedVerificationSource::fetch($this->civ13->browser))->then(function (array $status): array {
             $this->verified = new Collection($this->hosted->records(), 'discord');
             $this->civ13->verifier_online = $status['available'];
+            if ($status['available'] === true) { $this->saveDisplayCache($this->hosted->records()); }
             // Existing successful refresh only. Coalesced callers must not duplicate the notification.
             if ($status['available'] === true && ($status['coalesced'] ?? true) === false) {
                 try { $this->civ13->hostedVerificationRefreshed($this); }
@@ -1373,8 +1385,102 @@ class Verifier
                 }
             }
             $this->logger->info('Hosted verification refresh', $status);
+            if (($status['coalesced'] ?? true) === false) {
+                // Retry scheduling is best effort and must not turn a finished refresh into a rejection.
+                try { $status['available'] === true ? $this->hostedRetryReset() : $this->scheduleHostedRetry(); }
+                catch (\Throwable) {
+                    try { $this->logger->warning('Hosted verification retry could not be scheduled'); } catch (\Throwable) {}
+                }
+            }
             return $status;
         });
+    }
+
+    /** The current hosted list rows (read-only desktop bots); empty when none has loaded. */
+    public function hostedRecords(): array
+    {
+        return $this->hosted?->records() ?? [];
+    }
+
+    /**
+     * Identity lookup for display only (chat relay names, mentions). Uses the live list when it is
+     * fresh, otherwise the last good hosted list kept in memory and on disk. Never use it to grant access.
+     */
+    public function getDisplayItem(string $discrim, $key): ?array
+    {
+        try { return $this->get($discrim, $key); }
+        catch (VerifierException $e) {
+            if ($this->displayCache === null) { throw $e; }
+            return $this->cachedDisplayItem($discrim, $key);
+        }
+    }
+
+    /** Reads only the display cache (no live lookup); null when there is no cache or no match. */
+    public function cachedDisplayItem(string $discrim, $key): ?array
+    {
+        $item = $this->displayCache?->get($discrim, $key);
+        return is_array($item) ? $item : null;
+    }
+
+    /** Whether a display-only cached list is available while the live hosted list is not. */
+    public function hasDisplayCache(): bool
+    {
+        return $this->displayCache !== null;
+    }
+
+    /** Loads the last good hosted list from disk; a missing or invalid file leaves no cache and never blocks startup. */
+    private function loadDisplayCache(): void
+    {
+        try {
+            $path = $this->civ13->filecache_path ?? null;
+            if (!is_string($path) || !is_file($path.self::DISPLAY_CACHE_FILE)) { return; }
+            $saved = $this->civ13->VarLoad(self::DISPLAY_CACHE_FILE);
+            if (!is_array($saved)) { return; }
+            $records = HostedVerificationSource::validate(json_encode(array_values($saved), JSON_THROW_ON_ERROR));
+            $this->displayCache = new Collection($records, 'discord');
+            $this->displayCacheHash = hash('sha256', json_encode($records, JSON_THROW_ON_ERROR));
+        } catch (\Throwable) {
+            $this->displayCache = null;
+            try { $this->logger->warning('Cached hosted verification list could not be loaded; waiting for the hosted list'); } catch (\Throwable) {}
+        }
+    }
+
+    /** Keeps the last good hosted list in memory and writes it to disk when it changed. Failures are logged, never thrown. */
+    private function saveDisplayCache(array $records): void
+    {
+        try {
+            $this->displayCache = new Collection($records, 'discord');
+            $hash = hash('sha256', json_encode($records, JSON_THROW_ON_ERROR));
+            if ($hash === $this->displayCacheHash) { return; }
+            if ($this->civ13->VarSave(self::DISPLAY_CACHE_FILE, $records)) { $this->displayCacheHash = $hash; }
+        } catch (\Throwable) {
+            try { $this->logger->warning('Hosted verification cache could not be saved'); } catch (\Throwable) {}
+        }
+    }
+
+    /** Schedules one bounded retry after a failed hosted refresh; never throws into the loop. */
+    private function scheduleHostedRetry(): void
+    {
+        if (isset($this->timers['hosted_retry'])) { return; }
+        $delays = self::HOSTED_RETRY_SECONDS;
+        $delay = $delays[min($this->hostedRetryAttempt, count($delays) - 1)];
+        $this->hostedRetryAttempt++;
+        $this->timers['hosted_retry'] = $this->civ13->loop->addTimer($delay, function (): void {
+            unset($this->timers['hosted_retry']);
+            try { $this->refreshHosted(); }
+            catch (\Throwable) {
+                try { $this->logger->warning('Hosted verification retry failed to start'); } catch (\Throwable) {}
+            }
+        });
+    }
+
+    private function hostedRetryReset(): void
+    {
+        $this->hostedRetryAttempt = 0;
+        if (isset($this->timers['hosted_retry'])) {
+            $this->civ13->loop->cancelTimer($this->timers['hosted_retry']);
+            unset($this->timers['hosted_retry']);
+        }
     }
     // Magic Methods
     /**

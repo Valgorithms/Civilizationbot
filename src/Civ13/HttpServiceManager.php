@@ -48,6 +48,7 @@ class HttpServiceManager
     protected array $dwa_discord_ids = [];
     private ?Directory $launcherDirectory = null;
     private ?GameReady $gameReady = null;
+    private ?VoiceLobbies $voiceLobbies = null;
     private ?TimerInterface $launcherDirectoryTimer = null;
 
     /** @param Civ13 $civ13 The bot instance; builds the {@see HttpHandler} and binds `discord`/`logger` by reference. */
@@ -191,6 +192,58 @@ class HttpServiceManager
         return new HttpResponse(HttpResponse::STATUS_ACCEPTED);
     }
 
+    /**
+     * Join-screen relay for the server's lobby channel. kind "chat" (default)
+     * is lobby chat and needs a message; "join_screen" and "entered" are short
+     * arrival notices that carry only the player's key.
+     */
+    public function handleLobbyWebhook(ServerRequestInterface $request, GameServer $gameserver): HttpResponse
+    {
+        $data = self::decodeParamData($request);
+        $key = $this->civ13->options['http_key'] ?? '';
+        $requestKey = $request->getQueryParams()['key'] ?? null;
+        if (!is_string($key) || $key === '' || !is_string($requestKey) || !hash_equals($key, $requestKey)) {
+            return new HttpResponse(HttpResponse::STATUS_FORBIDDEN);
+        }
+        $kind = $data['kind'] ?? 'chat';
+        if (!is_string($kind) || !in_array($kind, ['chat', 'join_screen', 'entered'], true)) {
+            return new HttpResponse(HttpResponse::STATUS_BAD_REQUEST);
+        }
+        if (!is_string($data['ckey'] ?? null) || !preg_match('/^[A-Za-z0-9_ ]{1,64}$/D', $data['ckey'])) {
+            return new HttpResponse(HttpResponse::STATUS_BAD_REQUEST);
+        }
+        $ckey = Civ13::sanitizeInput($data['ckey']);
+        if ($ckey === '') { return new HttpResponse(HttpResponse::STATUS_BAD_REQUEST); }
+        if ($kind === 'chat' && (!is_string($data['message'] ?? null) || $data['message'] === ''
+            || strlen($data['message']) > 16384 || str_contains($data['message'], "\0"))) {
+            return new HttpResponse(HttpResponse::STATUS_BAD_REQUEST);
+        }
+        if ($gameserver->legacy_relay) { return new HttpResponse(HttpResponse::STATUS_FORBIDDEN); }
+        $channel = $gameserver->lobby ?? '';
+        if (!$channel || !$this->discord->getChannel($channel)) {
+            return new HttpResponse(HttpResponse::STATUS_SERVICE_UNAVAILABLE);
+        }
+        $time = '['.date('H:i:s').']';
+        if ($kind === 'chat') {
+            $message = strip_tags(htmlspecialchars_decode(html_entity_decode($data['message'])));
+            if ($message === '') { return new HttpResponse(HttpResponse::STATUS_BAD_REQUEST); }
+            $relay = $gameserver->gameChatWebhookRelay("**__{$time} LOBBY__ $ckey:** $message", $channel, $ckey, true);
+        } else {
+            $name = self::lobbyMarkdownName($data['ckey']);
+            $line = $kind === 'join_screen' ? "`{$time}` **{$name}** is on the join screen." : "`{$time}` **{$name}** entered the world.";
+            $relay = $gameserver->gameChatWebhookRelay($line, $channel);
+        }
+        $relay->then(null, fn (\Throwable $error) => $this->logger->error('Lobby relay failed: '.$error->getMessage()));
+
+        return new HttpResponse(HttpResponse::STATUS_ACCEPTED);
+    }
+
+    /** A BYOND key as literal Discord text: markdown characters escaped. */
+    public static function lobbyMarkdownName(string $key): string
+    {
+        return preg_replace('/([\\\\_*~`|>])/', '\\\\$1', $key);
+    }
+
     /** Existing keyed bridge only. Observations never upgrade lifecycle/Topic readiness. */
     public function handleGameReadyWebhook(ServerRequestInterface $request, GameServer $gameserver): HttpResponse
     {
@@ -245,16 +298,34 @@ class HttpServiceManager
             return new HttpResponse(HttpResponse::STATUS_SERVICE_UNAVAILABLE);
         }
         // A round reloaded from a save keeps its identity; announce it without the ping.
+        $name = self::noticeServerName($gameserver, $data);
         if (in_array($data['resumed'] ?? false, [true, 1, '1'], true)) {
-            $message = 'Round `'.$data['round'].'` has resumed from a save.';
+            $message = 'Round `'.$data['round'].'` in **'.$name.'** has resumed from a save.';
         } else {
             $role = $this->civ13->role_ids['round_start'] ?? null;
-            $message = ($role ? "<@&$role>, " : '').'New round `'.$data['round'].'` has started!';
+            $message = ($role ? "<@&$role>, " : '').'New round `'.$data['round'].'` has started in **'.$name.'**!';
         }
         $this->civ13->sendMessage($channel, $message)->then(null, function (\Throwable $error): void {
             $this->logger->error('Queued round notification failed', ['exception' => $error]);
         });
         return new HttpResponse(HttpResponse::STATUS_ACCEPTED);
+    }
+
+    /**
+     * The server name for round, save and shutdown notices. Every region of a group posts to
+     * the same bot server, so the game sends its region's display name (Civ13 webhook_add_region)
+     * and the notice says "Persistence (North America)". The name is reduced to plain words so
+     * it can neither ping nor break the Markdown around it; a missing or matching name adds nothing.
+     */
+    public static function noticeServerName(GameServer $gameserver, array $data): string
+    {
+        $name = is_string($gameserver->name ?? null) && $gameserver->name !== '' ? $gameserver->name : $gameserver->key;
+        $region = $data['region_name'] ?? null;
+        if (!is_string($region)) return $name;
+        $region = trim(preg_replace('/\s+/u', ' ', preg_replace("/[^\\p{L}\\p{N} .,'()-]+/u", ' ', $region) ?? '') ?? '');
+        $region = mb_substr($region, 0, 80);
+        if ($region === '' || strcasecmp($region, $name) === 0) return $name;
+        return "{$name} ({$region})";
     }
 
     /**
@@ -282,7 +353,7 @@ class HttpServiceManager
             return new HttpResponse(HttpResponse::STATUS_SERVICE_UNAVAILABLE);
         }
         $shutdown = in_array($data['shutdown'] ?? false, [true, 1, '1'], true);
-        $name = is_string($gameserver->name ?? null) && $gameserver->name !== '' ? $gameserver->name : $gameserver->key;
+        $name = self::noticeServerName($gameserver, $data);
         $time = '['.date('H:i:s').']';
         $message = match ($event) {
             'started' => "{$time} **{$name}**: world save started".($shutdown ? ' before a restart' : '').'. The server may pause briefly.',
@@ -321,7 +392,7 @@ class HttpServiceManager
         if (!isset($gameserver->discussion) || !$channel = $this->discord->getChannel($gameserver->discussion)) {
             return new HttpResponse(HttpResponse::STATUS_SERVICE_UNAVAILABLE);
         }
-        $name = is_string($gameserver->name ?? null) && $gameserver->name !== '' ? $gameserver->name : $gameserver->key;
+        $name = self::noticeServerName($gameserver, $data);
         $time = '['.date('H:i:s').']';
         $what = match ($kind) {
             'shutdown' => 'save and shut down',
@@ -348,6 +419,90 @@ class HttpServiceManager
             $this->logger->error('Queued shutdown notice failed', ['exception' => $error]);
         });
         return new HttpResponse(HttpResponse::STATUS_ACCEPTED);
+    }
+
+    /**
+     * Launcher voice (Civ13 code/modules/voice/voice_chat.dm): the game POSTs its voice roster as
+     * JSON with the webhook key in X-Webhook-Key, and gets back {ids: {ckey: Discord user ID}}.
+     * See {@see VoiceLobbies}.
+     */
+    public function handleVoiceRosterWebhook(ServerRequestInterface $request, GameServer $gameserver): HttpResponse
+    {
+        $secret = $this->civ13->options['http_key'] ?? '';
+        $key = $request->getHeaderLine('X-Webhook-Key');
+        if (!is_string($secret) || $secret === '' || $key === '' || !hash_equals($secret, $key) || $gameserver->legacy_relay) {
+            return new HttpResponse(HttpResponse::STATUS_FORBIDDEN);
+        }
+        if ($request->getMethod() !== 'POST') {
+            return new HttpResponse(HttpResponse::STATUS_METHOD_NOT_ALLOWED);
+        }
+        $body = (string) $request->getBody();
+        $data = strlen($body) <= 131072 ? json_decode($body, true, 5) : null;
+        if (($members = VoiceLobbies::parseRoster($data)) === null) {
+            return new HttpResponse(HttpResponse::STATUS_BAD_REQUEST);
+        }
+        if (!$voice = $this->voiceLobbies()) {
+            return new HttpResponse(HttpResponse::STATUS_SERVICE_UNAVAILABLE);
+        }
+
+        return HttpResponse::json(['ids' => (object) $voice->roster($gameserver->key, $members)]);
+    }
+
+    /**
+     * Launcher voice: the launcher POSTs {id: sha256("civ13-voice-token:" + key)} and gets its
+     * Discord access token sealed with a key only it and the game know (202 while it is minted).
+     */
+    public function handleVoiceToken(ServerRequestInterface $request): HttpResponse
+    {
+        if ($request->getMethod() !== 'POST') {
+            return new HttpResponse(HttpResponse::STATUS_METHOD_NOT_ALLOWED);
+        }
+        $body = (string) $request->getBody();
+        $data = strlen($body) <= 256 ? json_decode($body, true, 2) : null;
+        $id = is_array($data) ? ($data['id'] ?? null) : null;
+        if (!is_string($id) || preg_match('/^[0-9a-f]{64}$/D', $id) !== 1) {
+            return new HttpResponse(HttpResponse::STATUS_BAD_REQUEST);
+        }
+        $sealed = $this->voiceLobbies()?->token($id);
+
+        return $sealed === null
+            ? HttpResponse::json(['v' => 1, 'ready' => false])->withStatus(HttpResponse::STATUS_ACCEPTED)
+            : HttpResponse::plaintext($sealed)->withHeader('Content-Type', 'application/json');
+    }
+
+    /** The voice service, made on first use once the bot knows its application. */
+    private function voiceLobbies(): ?VoiceLobbies
+    {
+        if ($this->voiceLobbies !== null) {
+            return $this->voiceLobbies;
+        }
+        $application = $this->discord->application->id ?? null;
+        if (!is_string($application) || $application === '') {
+            return null;
+        }
+        $discord = $this->discord;
+
+        return $this->voiceLobbies = new VoiceLobbies(
+            mint: static fn (string $ckey): PromiseInterface => $discord->getHttpClient()->post(\Discord\Http\Endpoint::PARTNER_SDK_TOKEN_BOT, [
+                'external_user_id' => 'byond:'.$ckey,
+                'preferred_global_name' => $ckey,
+            ]),
+            createLobby: static fn (array $metadata): PromiseInterface => $discord->lobbies->createLobby([
+                'metadata' => $metadata,
+                'idle_timeout_seconds' => VoiceLobbies::IDLE_TIMEOUT,
+            ])->then(static fn ($lobby) => (string) $lobby->id),
+            // Resolves to the user IDs Discord confirmed as added or updated.
+            updateMembers: static fn (string $lobby, array $members): PromiseInterface => $discord->lobbies->bulkUpdateMembers($lobby, $members)
+                ->then(static function ($confirmed): array {
+                    $ids = [];
+                    foreach ($confirmed as $member) {
+                        $ids[] = (string) ($member->id ?? '');
+                    }
+
+                    return $ids;
+                }),
+            applicationId: $application,
+        );
     }
 
     /**
@@ -1378,6 +1533,12 @@ class HttpServiceManager
                 false
             )
             ->offsetSet(
+                '/voice/token', // Launcher voice: sealed Discord token for a voice key (VoiceLobbies)
+                fn (ServerRequestInterface $request, string $endpoint, bool $whitelisted): HttpResponse => $this->handleVoiceToken($request),
+                false
+            )
+            ->setRateLimit('/voice/token', 30, 60)
+            ->offsetSet(
                 '/ss14verified',
                 fn (ServerRequestInterface $request, string $endpoint, bool $whitelisted): HttpResponse => ($this->civ13->ss14verifier === null ? HttpResponse::json(['error' => 'SS14 verification unavailable'])->withStatus(503) : HttpResponse::json($this->civ13->ss14verifier->toArray())),
                 false
@@ -1652,27 +1813,7 @@ class HttpServiceManager
 
                 ->offsetSet(
                     $server_endpoint.'/lobbymessage',
-                    function (ServerRequestInterface $request, string $endpoint, bool $whitelisted) use (&$gameserver): HttpResponse {
-                        if ($gameserver->legacy_relay) {
-                            return new HttpResponse(HttpResponse::STATUS_FORBIDDEN);
-                        }
-                        if (! isset($gameserver->lobby)) {
-                            return HttpResponse::plaintext('Webhook Channel Not Defined')->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
-                        }
-                        if (! $this->discord->getChannel($channel_id = $gameserver->lobby)) {
-                            return HttpResponse::plaintext('Discord Channel Not Found')->withStatus(HttpResponse::STATUS_INTERNAL_SERVER_ERROR);
-                        }
-
-                        $data = self::decodeParamData($request);
-                        $time = '['.date('H:i:s', time()).']';
-                        isset($data['ckey']) ? $ckey = Civ13::sanitizeInput($data['ckey']) : $ckey = '(NULL)';
-                        isset($data['message']) ? $message = strip_tags(htmlspecialchars_decode(html_entity_decode($data['message']))) : $message = '(NULL)';
-                        $message = "**__{$time} LOBBY__ $ckey:** $message";
-
-                        $gameserver->gameChatWebhookRelay($message, $channel_id, $ckey, true);
-
-                        return new HttpResponse(HttpResponse::STATUS_OK);
-                    },
+                    fn (ServerRequestInterface $request, string $endpoint, bool $whitelisted): HttpResponse => $this->handleLobbyWebhook($request, $gameserver),
                     true
                 )
                 ->offsetSet(
@@ -1738,6 +1879,11 @@ class HttpServiceManager
                 ->offsetSet(
                     $server_endpoint.'/discord_verify',
                     fn (ServerRequestInterface $request, string $endpoint, bool $whitelisted): HttpResponse => $this->handleDiscordVerifyWebhook($request, $gameserver),
+                    true
+                )
+                ->offsetSet(
+                    $server_endpoint.'/voice_roster',
+                    fn (ServerRequestInterface $request, string $endpoint, bool $whitelisted): HttpResponse => $this->handleVoiceRosterWebhook($request, $gameserver),
                     true
                 )
                 ->offsetSet(

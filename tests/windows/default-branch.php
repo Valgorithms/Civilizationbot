@@ -91,7 +91,7 @@ try {
 
     // Real control/direct bootstrap refuses detached source before credentials, Composer, spawn or network.
     $app=$root.'/app';$state=$root.'/state';mkdir($app);mkdir($state);mkdir($app.'/vendor');mkdir($app.'/scripts');mkdir($app.'/scripts/windows');mkdir($app.'/src');mkdir($app.'/src/Civ13');
-    foreach(['DefaultBranchGuard','PortableProfile','PortableProcess'] as $class){copy(__DIR__.'/../../src/Civ13/'.$class.'.php',$app.'/src/Civ13/'.$class.'.php');}
+    foreach(['DefaultBranchGuard','PortableProfile','PortableProcess','LogLevelSetting'] as $class){copy(__DIR__.'/../../src/Civ13/'.$class.'.php',$app.'/src/Civ13/'.$class.'.php');}
     copy(__DIR__.'/../../scripts/windows/control.php',$app.'/scripts/windows/control.php');copy(__DIR__.'/../../bot.php',$app.'/bot.php');file_put_contents($app.'/vendor/autoload.php','<?php throw new RuntimeException("Composer must not load");');
     file_put_contents($root.'/separate.env','invalid fixture; must never load');
     $server=['basedir'=>$app,'ip'=>'127.0.0.1','port'=>1714,'name'=>'fixture','host'=>'fixture','enabled'=>false];foreach(['discussion','playercount','ooc','lobby','asay','ic','transit','adminlog','debug','garbage','runtime','attack']as$key){$server[$key]='';}

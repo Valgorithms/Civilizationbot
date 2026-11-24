@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 // Real bootstrap through final options assembly; only external-effect dependencies are inert fixtures.
-namespace Monolog { class Level { public const Debug=100; } class Logger { public function __construct(...$args) {} public function info(...$args):void {} } }
+namespace Monolog { class Level { public const Debug=100; public static function fromName(string $name): string { return $name; } } class Logger { public function __construct(...$args) {} public function info(...$args):void {} public function notice(...$args):void {} public function warning(...$args):void {} } }
 namespace Monolog\Formatter { class LineFormatter { public function __construct(...$args) {} } }
 namespace Monolog\Handler { class StreamHandler { public function __construct(...$args) {} public function setFormatter($formatter) { return $this; } } }
 namespace Discord { class Discord { public function __construct(array $options) {} } class Stats { public static function new($discord) { return new self(); } } }
@@ -35,7 +35,7 @@ namespace {
     $previous=getcwd();$previousProfile=getenv('CIVILIZATIONBOT_PROFILE');
     try {
         file_put_contents($root.'/vendor/autoload.php','<?php return 1;');
-        foreach(['PortableProfile','PortableProcess'] as $class) { copy(__DIR__.'/../../src/Civ13/'.$class.'.php',$root.'/src/Civ13/'.$class.'.php'); }
+        foreach(['PortableProfile','PortableProcess','LogLevelSetting'] as $class) { copy(__DIR__.'/../../src/Civ13/'.$class.'.php',$root.'/src/Civ13/'.$class.'.php'); }
         // Git/network admission is covered by default-branch.php; this fixture
         // isolates subsequent bootstrap option assembly with synthetic inputs.
         file_put_contents($root.'/src/Civ13/DefaultBranchGuard.php', '<?php namespace Civ13; final class DefaultBranchGuard { public static function verify(string $root): array { $GLOBALS["bootstrap_guard_seen"] = true; return []; } }');

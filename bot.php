@@ -99,6 +99,7 @@ function loadEnv(string $filePath, bool $explicit = false): array
 require_once __DIR__.'/src/Civ13/PortableProfile.php';
 require_once __DIR__.'/src/Civ13/PortableProcess.php';
 require_once __DIR__.'/src/Civ13/DefaultBranchGuard.php';
+require_once __DIR__.'/src/Civ13/LogLevelSetting.php';
 $portable = null;
 $portableLock = null;
 $portablePath = getenv('CIVILIZATIONBOT_PROFILE');
@@ -142,10 +143,15 @@ $loadedNames = loadEnv($portable['env_file'] ?? $baseDir.'/.env', $portable !== 
 if ($portable !== null && (!in_array('TOKEN', $loadedNames, true) || !getenv('TOKEN'))) { throw new \RuntimeException('Separate profile environment must explicitly supply TOKEN'); }
 
 if ($portable === null) { file_put_contents($baseDir.'/output.log', ''); } // Clear the contents of 'output.log'
-$fileHandler = (new StreamHandler(($portable['state_dir'] ?? $baseDir).'/output.log', Level::Debug))->setFormatter(new LineFormatter(null, null, true, true, true));
-$stdoutHandler = (new StreamHandler('php://stdout', Level::Debug))->setFormatter(new LineFormatter(null, null, true, true, true));
+// Profile log_level (set from the launcher's Civilizationbot tab), else LOG_LEVEL, else info. Never blocks boot.
+[$logLevelName, $logLevelWarning] = \Civ13\LogLevelSetting::resolve($portable['log_level'] ?? null, getenv('LOG_LEVEL'));
+$logLevel = Level::fromName($logLevelName);
+$fileHandler = (new StreamHandler(($portable['state_dir'] ?? $baseDir).'/output.log', $logLevel))->setFormatter(new LineFormatter(null, null, true, true, true));
+$stdoutHandler = (new StreamHandler('php://stdout', $logLevel))->setFormatter(new LineFormatter(null, null, true, true, true));
 $logger = new Logger('Civ13', [$fileHandler, $stdoutHandler]);
 Loop::addPeriodicTimer(60 * 10, fn () => $logger->reset()); // Flush all buffers every 10 minutes
+if ($logLevelWarning !== null) { $logger->warning($logLevelWarning); }
+$logger->notice('Log level: '.$logLevelName);
 $logger->info('Loading configurations for the bot...');
 set_rejection_handler(function (\Throwable $e) use ($logger) {
     if ($e->getMessage() !== 'Cannot resume a fiber that is not suspended') {
@@ -422,7 +428,7 @@ $civ13_server_settings = [ // Server specific settings, listed in the order in w
         'moderate' => true,
         'legacy_relay' => false,
         'basedir' => '/home/valithor/VPS/civ13-rp',
-        'play' => ['url' => 'https://civ13.github.io/persistence/'], // Gaia gateway :1714 (docs/server-play-button.md)
+        'play' => ['url' => 'https://civ13.com/persistence/'], // Gaia gateway :1714 (docs/server-play-button.md)
         // Primary channels
         'discussion' => '799951945346711552',
         'playercount' => '1090788345082298369',
@@ -457,12 +463,20 @@ if (is_file($tdm_group)) {
         'kill' => 'stop', // save if the world saves, then stop; 'kill' forces it down without saving
     ];
     unset($civ13_server_settings['tdm']['systemd']);
-    $civ13_server_settings['tdm']['basedir'] = '/home/civ13/tdm/barracks';
-    $civ13_server_settings['tdm']['shard_group'] = $tdm_shard_group('barracks');
-    $civ13_server_settings['tdm']['shards'] = ['/home/civ13/tdm/battle']; // the player-count channel counts both worlds
+    // "tdm" is the group's front door, the world on port 1714 that posts to /webhook/tdm: the Barracks, or the
+    // gateway once `shard_group.py set-gate` puts one in front. Follow it like a portable profile's
+    // follow_front_door (basedir, and the shared front-door/SQL/admins.txt), so a gate move needs only a bot
+    // restart. An unreadable group file or a front door that is not set up keeps the Barracks.
+    $tdm_front = \Civ13\PortableProfile::followFrontDoor(['region_group' => $tdm_group, 'basedir' => '/home/civ13/tdm/barracks']);
+    $civ13_server_settings['tdm']['basedir'] = $tdm_front['basedir'];
+    if (isset($tdm_front['admin_file'])) {
+        $civ13_server_settings['tdm']['admin_file'] = $tdm_front['admin_file'];
+    }
+    $civ13_server_settings['tdm']['shard_group'] = $tdm_shard_group(basename($tdm_front['basedir']));
+    $civ13_server_settings['tdm']['region_group'] = $tdm_group; // the player-count channel counts every region
     // Battle posts to /webhook/tdmbattle and shares the TDM channels. It never renames the player-count channel
-    // (the Barracks counts it) but keeps its own round embed there; Discord OOC goes to the Barracks only, which
-    // shares it with the battle world in game (Civ13 region OOC).
+    // (the front door counts it) but keeps its own round embed there; Discord OOC goes to the front door only,
+    // which shares it with the other worlds in game (Civ13 region OOC).
     $civ13_server_settings['tdmbattle'] = array_merge($civ13_server_settings['tdm'], [
         'supported' => false, // hidden from the hub
         'name' => 'TDM Battle',
@@ -471,7 +485,9 @@ if (is_file($tdm_group)) {
         'shard_group' => $tdm_shard_group('battle'),
         'shard_of' => 'tdm',
     ]);
-    unset($civ13_server_settings['tdmbattle']['shards'], $civ13_server_settings['tdmbattle']['play']); // one TDM Play button, entering through the Barracks
+    // Battle keeps the inherited TDM Play link, so its round embed in the TDM channel enters through the front door
+    // too; the aggregate status skips shards (shard_of), so it still shows one TDM button.
+    unset($civ13_server_settings['tdmbattle']['region_group']);
 }
 foreach ($civ13_server_settings as $key => $value) {
     $civ13_server_settings[$key]['key'] = $key;
@@ -603,7 +619,17 @@ $global_error_handler = async(function (int $errno, string $errstr, ?string $err
         $civ13->sendMessage($channel, $civ13::createBuilder()->setContent($msg)->addFileFromContent('error.txt', $msg.PHP_EOL.$backtrace));
     }
 });
-set_error_handler($global_error_handler);
+// Honor the @ operator: a silenced warning (for example a file the game deleted between an
+// existence check and the read) is already handled by its caller and is not a staff alert.
+// PHP 8 keeps real errors in error_reporting() under @, so those are still reported. Check it
+// here, not inside the async handler: a fiber does not inherit the caller's @ state.
+set_error_handler(static function (int $errno, string $errstr, ?string $errfile = null, ?int $errline = null) use ($global_error_handler): bool {
+    if (error_reporting() & $errno) {
+        $global_error_handler($errno, $errstr, $errfile, $errline);
+    }
+
+    return true;
+});
 
 use React\Socket\SocketServer;
 use React\Http\HttpServer;

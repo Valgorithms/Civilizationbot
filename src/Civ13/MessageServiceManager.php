@@ -312,6 +312,8 @@ class MessageServiceManager
                 ->offsetSet("{$gameserver->key}update", new Commands\Civ13GameServerUpdate($this->civ13, $gameserver), ['Ambassador'])
                 ->offsetSet("{$gameserver->key}manage", new Commands\Civ13GameServerManage($this->civ13, $gameserver), ['Ambassador'])
                 ->offsetSet("{$gameserver->key}hoststatus", new Commands\Civ13GameServerHostStatus($this->civ13, $gameserver), ['Ambassador'])
+                ->offsetSet("{$gameserver->key}activity", new Commands\Civ13GameServerActivity($this->civ13, $gameserver), ['Ambassador', 'Admin'])
+                ->offsetSet("{$gameserver->key}karma", new Commands\Civ13GameServerKarma($this->civ13, $gameserver), ['Ambassador', 'Admin'])
                 ->offsetSet("{$gameserver->key}mapswap", new Commands\Civ13GameServerMapSwap($this->civ13, $gameserver), ['Ambassador'])
                 ->offsetSet("{$gameserver->key}panic", new Commands\Civ13GameServerPanic($this->civ13, $gameserver), ['Ambassador'])
                 ->offsetSet("{$gameserver->key}ban", new Commands\Civ13GameServerBan($this->civ13, $gameserver), ['Admin'])
@@ -357,17 +359,28 @@ class MessageServiceManager
     }
 
     /**
-     * Relays a plain (non-command) message posted in a server's #ooc channel to that server's in-game OOC.
+     * Relays a plain (non-command) message posted in a server's #ooc channel to that server's in-game OOC,
+     * or one posted in its lobby channel to the players on that server's join screen.
      * Only verified, non-banished members are relayed; badword matches and empty messages are dropped.
      * A failed IPC write is marked with a 🔥 reaction; successful relays stay quiet.
      */
     public function relayOocMessage(Message $message): ?PromiseInterface
     {
         $gameserver = null;
+        $lobby = false;
         foreach ($this->civ13->enabled_gameservers as $candidate) {
             // A secondary shard region shares its parent's OOC channel; Discord OOC goes to the parent world only.
-            if ($candidate->ooc !== '' && $candidate->ooc === $message->channel_id && $candidate->shardOf === '') {
+            if ($candidate->shardOf !== '') {
+                continue;
+            }
+            if ($candidate->ooc !== '' && $candidate->ooc === $message->channel_id) {
                 $gameserver = $candidate;
+                break;
+            }
+            // The lobby channel reaches only the players on that world's join screen.
+            if (($candidate->lobby ?? '') !== '' && $candidate->lobby === $message->channel_id) {
+                $gameserver = $candidate;
+                $lobby = true;
                 break;
             }
         }
@@ -414,7 +427,7 @@ class MessageServiceManager
         if (OocAutoRelay::blocked($text, $this->civ13->ooc_badwords)) {
             return null;
         }
-        if ($gameserver->OOCMessage($text, $ckey)) {
+        if ($lobby ? $gameserver->LobbyMessage($text, $ckey) : $gameserver->OOCMessage($text, $ckey)) {
             return null;
         }
 

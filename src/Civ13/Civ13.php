@@ -111,6 +111,7 @@ class Civ13
     
     public const discord2ooc = '/SQL/discord2ooc.txt';
     public const discord2admin = '/SQL/discord2admin.txt';
+    public const discord2lobby = '/SQL/discord2lobby.txt';
     public const discord2dm = '/SQL/discord2dm.txt';
     public const discord2ban = '/SQL/discord2ban.txt';
     public const discord2unban = '/SQL/discord2unban.txt';
@@ -170,6 +171,7 @@ class Civ13
     public Verifier $verifier;
     private ?AdminFileSync $adminFileSync = null;
     private ?AccessFileSync $accessFileSync = null;
+    private ?RegionApprovedList $regionApprovedList = null; // desktop bot: verified list -> each region's SQL/approved.txt
     public ?SS14Verifier $ss14verifier = null;
 
     public string $welcome_message = '';
@@ -669,7 +671,7 @@ class Civ13
         $this->welcome_message = $options['welcome_message'];
 
         if (! $options['logger']) {
-            $streamHandler = new StreamHandler('php://stdout', Level::Debug);
+            $streamHandler = new StreamHandler('php://stdout', Level::Info);
             $streamHandler->setFormatter(new LineFormatter(null, null, true, true));
             $options['logger'] = new Logger(self::class, [$streamHandler]);
         }
@@ -866,7 +868,7 @@ class Civ13
             return $logger;
         }
 
-        return new Logger(self::class, [new StreamHandler('php://stdout', Level::Debug)]);
+        return new Logger(self::class, [new StreamHandler('php://stdout', Level::Info)]);
     }
 
     /** The command prefix `$content` starts with (bot mention or `command_symbol`), or null. */
@@ -990,6 +992,42 @@ class Civ13
         if (!isset($this->verifier) || $this->verifier !== $verifier) { return; }
         $this->adminFileSync?->verificationChanged();
         $this->accessFileSync?->verificationChanged();
+        $this->publishRegionApprovedLists($verifier);
+    }
+
+    /**
+     * Desktop bot with a region group: copies the hosted verified list into every
+     * region's SQL/approved.txt, writing only files whose text changed (Val, 2026-11-22).
+     * Failure is logged and retried on the next refresh; it never affects the refresh itself.
+     */
+    private function publishRegionApprovedLists(Verifier $verifier): void
+    {
+        try {
+            if (! isset($verifier->readOnly) || ! $verifier->readOnly || ! isset($this->enabled_gameservers)) {
+                return;
+            }
+            $directories = [];
+            foreach ($this->enabled_gameservers as $gameserver) {
+                $group = $gameserver->regionGroupFile();
+                if ($group === '') {
+                    continue;
+                }
+                $directories[] = rtrim(str_replace('\\', '/', $gameserver->basedir), '/');
+                foreach (RegionApprovedList::directories($group) as $directory) {
+                    $directories[] = rtrim(str_replace('\\', '/', $directory), '/');
+                }
+            }
+            if (! $directories = array_values(array_unique($directories))) {
+                return;
+            }
+            $this->regionApprovedList ??= new RegionApprovedList();
+            $result = $this->regionApprovedList->publish($directories, RegionApprovedList::render($verifier->hostedRecords()));
+            if ($result['written'] || $result['failed']) {
+                $this->logger->info('Region verified lists updated', ['written' => count($result['written']), 'unchanged' => $result['unchanged'], 'skipped' => $result['skipped'], 'failed' => $result['failed']]);
+            }
+        } catch (\Throwable $e) {
+            try { $this->logger->warning('Region verified list update failed: '.$e->getMessage()); } catch (\Throwable) {}
+        }
     }
 
     /** Cleanup failure must not prevent the existing bot shutdown or escape our destructor. */
@@ -1299,6 +1337,23 @@ class Civ13
 
         return $builder;
     }
+    /**
+     * Servers that get a Play button on the aggregate status, at most 25 (Discord's limit). A shard (e.g. TDM
+     * Battle) shares its parent's Play link on its own round embed, so the aggregate shows one button per front door.
+     *
+     * @param  iterable<GameServer> $gameservers
+     * @return list<GameServer>
+     */
+    public static function aggregatePlayServers(iterable $gameservers): array
+    {
+        $servers = [];
+        foreach ($gameservers as $gameserver) {
+            if ($gameserver->playLink === null || $gameserver->shardOf !== '') { continue; }
+            $servers[] = $gameserver;
+            if (count($servers) >= 25) { break; }
+        }
+        return $servers;
+    }
     /** A message builder with one status embed per enabled Civ13 and Civ14 game server. */
     public function createServerstatusEmbed(): MessageBuilder
     {
@@ -1331,8 +1386,7 @@ class Civ13
         // At most five rows of five URL buttons; status embeds/content remain unchanged.
         $row = null;
         $count = 0;
-        foreach ($this->enabled_gameservers as $gameserver) {
-            if ($gameserver->playLink === null || $count >= 25) { continue; }
+        foreach (self::aggregatePlayServers($this->enabled_gameservers) as $gameserver) {
             if ($count % 5 === 0) {
                 $row = \Discord\Builders\Components\ActionRow::new();
                 $builder->addComponent($row);

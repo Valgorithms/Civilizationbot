@@ -25,11 +25,11 @@ namespace {
     function check(bool $ok, string $message): void {
         if (! $ok) { throw new RuntimeException($message); }
     }
-    function record(string $time, string $players = '', bool $approved = false): string {
+    function record(string $time, string $players = '', bool $approved = false, string $map = 'fixture'): string {
         return '<b>Server Status</b>: Online;<b>Address</b>: byond://127.0.0.1:1715;<b>Map</b>: fixture;'
             .'<b>Gamemode</b>: fixture;<b>Players</b>: '.($players === '' ? '0' : '1').';'
             .($approved ? '<b>Approved only</b>: Enabled;' : '')
-            .'realtime='.$time.';world.address=127.0.0.1;round_timer=01:00;map=fixture;epoch=fixture;'
+            .'realtime='.$time.';world.address=127.0.0.1;round_timer=01:00;map='.$map.';epoch=fixture;'
             .'season=fixture;ckey_list='.$players.';allow_vote_restart=0;';
     }
     final class HeartbeatCiv extends Civ13\Civ13 {
@@ -257,7 +257,9 @@ namespace {
         file_put_contents($path, record('301', 'c'));
         file_put_contents($root.'/region/serverdata.txt', record('11', 'b&c'));
         $server->playercountChannelUpdate();
-        check($channel->name === 'nomads-2' && $server->players === ['c'], 'Shard players were not added to the group count');
+        check($channel->name === 'nomads-2', 'Shard players were not added to the group count');
+        // Moderation, staff presence and the player list see every region's players, each once.
+        check($server->players === ['c', 'b'] && $server->localServerPlayerCount() === 2, 'Group player list missed a shard region');
         // A secondary region (shard_of) is counted by its parent's channel and never renames it itself.
         $server->shardOf = 'tdm';
         $saves = $repository->saves;
@@ -269,6 +271,67 @@ namespace {
         unlink($root.'/region/serverdata.txt');
         rmdir($root.'/region');
         $shards->setValue($server, []);
+        // region_group: every other region of the group file is watched under its own name, and the
+        // embed lists the group's players by region. Region ids that are not plain names are ignored.
+        $groupProperty = new ReflectionProperty($server, 'regionGroupFile');
+        (new ReflectionProperty($server, 'roster'))->setValue($server, null);
+        $sibling = $root.'-gaia';
+        mkdir($sibling, 0700);
+        $groupFile = $root.'/group.json';
+        $group = ['root' => dirname($root), 'regions' => [['id' => basename($root), 'name' => 'North America'], ['id' => basename($sibling), 'name' => 'Gaia'], ['id' => '../escape', 'name' => 'Bad']]];
+        file_put_contents($groupFile, "\xEF\xBB\xBF".json_encode($group)); // with a byte order mark, as a Windows editor saves it
+        $groupProperty->setValue($server, $groupFile);
+        try {
+            file_put_contents($sibling.'/serverdata.txt', record('20', 'alice&bob'));
+            $now = 180;
+            file_put_contents($path, record('302', 'c'));
+            $server->generateServerstatusEmbed(); // Gaia's first read is only a baseline
+            check(array_keys($shards->getValue($server)) === [dirname($root).'/'.basename($sibling)], 'Group file watched the wrong regions');
+            file_put_contents($sibling.'/serverdata.txt', record('21', 'alice&bob'));
+            $now = 195;
+            file_put_contents($path, record('303', 'c'));
+            $grouped = fields($server->generateServerstatusEmbed());
+            check(($grouped['Online Players (3)'] ?? null) === "**North America** (1): c\n**Gaia** (2): alice, bob", 'Status embed did not list players by region');
+            $round = json_decode(json_encode($server->createCurrentRoundEmbedMessageBuilder(), JSON_THROW_ON_ERROR), true);
+            check(in_array('Online Players (3)', array_column($round['embeds'][0]['fields'], 'name'), true), 'Round embed did not count every region');
+            check(($grouped['Map'] ?? null) === 'fixture', 'A plain front door borrowed another region\'s map');
+            // A GATEWAY front door is empty: its players and map are the group's, from the mainland.
+            // No `mainland` key: shard_group.py's default is the first region (Gaia here, as in tdm.json).
+            $gatewayGroup = $group;
+            $gatewayGroup['regions'] = [$group['regions'][1], $group['regions'][0] + ['kind' => 'GATEWAY'], $group['regions'][2]];
+            file_put_contents($groupFile, json_encode($gatewayGroup));
+            file_put_contents($sibling.'/serverdata.txt', record('22', 'alice&bob', false, 'Gaia'));
+            $now = 210;
+            file_put_contents($path, record('304', '', false, 'Gateway'));
+            $gate = fields($server->generateServerstatusEmbed());
+            check(($gate['Map'] ?? null) === 'Gaia' && ($gate['Online Players (3)'] ?? null) === "**Gaia** (2): alice, bob\n*Between regions* (1): c", 'Gateway status did not describe the mainland'); // c just left North America: kept between regions
+            check($server->players === ['alice', 'bob', 'c'] && $server->localServerPlayerCount() === 3, 'Players behind the gateway were not counted');
+            $gateRound = json_decode(json_encode($server->createCurrentRoundEmbedMessageBuilder(), JSON_THROW_ON_ERROR), true);
+            check(array_column($gateRound['embeds'][0]['fields'], 'value', 'name')['Map'] === 'Gaia', 'Gateway round embed showed the empty gateway map');
+            // The gateway's own heartbeat is unreadable: the running mainland still fills the fields.
+            file_put_contents($sibling.'/serverdata.txt', record('24', 'alice&bob', false, 'Gaia'));
+            file_put_contents($path, 'torn');
+            $down = fields($server->generateServerstatusEmbed());
+            check(($down['Map'] ?? null) === 'Gaia' && ($down['Nomads'] ?? null) === 'Unknown', 'A gateway that is down hid the mainland');
+            foreach (['306' => 225, '307' => 240] as $realtime => $now) { // the gateway comes back
+                file_put_contents($path, record((string) $realtime, '', false, 'Gateway'));
+                $server->generateServerstatusEmbed();
+            }
+            $group['regions'][0] = ['id' => basename($root), 'name' => 'North America'];
+            // A region dropped from the file is no longer watched.
+            $group['regions'] = [$group['regions'][0]];
+            file_put_contents($groupFile, json_encode($group, JSON_PRETTY_PRINT));
+            $server->generateServerstatusEmbed();
+            check($shards->getValue($server) === [], 'A removed region was still watched');
+        } finally {
+            $groupProperty->setValue($server, '');
+            (new ReflectionProperty($server, 'regionName'))->setValue($server, '');
+            (new ReflectionProperty($server, 'roster'))->setValue($server, null);
+            $shards->setValue($server, []);
+            @unlink($sibling.'/serverdata.txt');
+            @rmdir($sibling);
+            @unlink($groupFile);
+        }
         check(! array_key_exists('shardHeartbeats', $server->__toArray()) && ! array_key_exists('worlds', $server->__toArray()), 'Shard observation leaked into serialization');
         check(fields($server->generateServerstatusEmbed())['Nomads'] === 'Heartbeat advancing', 'Recovery not reflected in renderer');
         unlink($path);
@@ -283,7 +346,8 @@ namespace {
         check(fields($remote->toEmbed())['Host'] === 'Unavailable', 'Remote status used a local or configured host');
         check(fields($remote->generateServerstatusEmbed())['Health'] === 'Unknown (no local heartbeat evidence)', 'Remote server inferred health');
         unset($GLOBALS['host_read_forbidden']);
-        check($remote->localServerPlayerCount() === 0, 'Remote server tried local player read');
+        $remote->players = ['cached'];
+        check($remote->localServerPlayerCount() === 0 && $remote->players === ['cached'], 'Remote server counted or dropped its cached players');
         check(! array_key_exists('heartbeat', $server->__toArray()), 'Ephemeral observation leaked into serialization');
         echo "Production heartbeat renderer/cache/timer contracts passed\n";
     } finally {

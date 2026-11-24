@@ -53,6 +53,11 @@ start never refuses because of the source check: it prints "Source check warning
 (starting anyway): ..." and boots the current checkout, so a guard problem can always
 be fixed from the launcher with Update or Repair and update.
 
+Logging defaults to info. The optional top-level profile key `log_level` (debug, info,
+notice, warning or error; the Civ13 launcher's Civilizationbot tab sets it) or the
+`LOG_LEVEL` environment value changes it at the next start. An unknown value logs a
+warning and uses info; it never stops the bot from starting.
+
 status reports whether the state lock is held (running), any pending stop or
 reload marker, and the stdout/stderr log paths. check-update fetches origin/main
 like start does and reports current, available, behind, can_update and reason;

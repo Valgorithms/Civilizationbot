@@ -92,16 +92,19 @@ final class RelayVerifier extends \Civ13\Verifier {
 }
 final class RelayServer extends \Civ13\GameServer {
     public array $sent = []; public bool $fail = false;
+    public array $lobbySent = [];
     public function OOCMessage(string $message, string $sender): bool { if ($this->fail) { return false; } $this->sent[] = [$sender, $message]; return true; }
+    public function LobbyMessage(string $message, string $sender): bool { if ($this->fail) { return false; } $this->lobbySent[] = [$sender, $message]; return true; }
 }
 $civ = (new ReflectionClass(RelayCiv::class))->newInstanceWithoutConstructor();
 $civ->owner_id = 'owner'; $civ->role_ids = ['Banished' => 'banished-role']; $civ->bans = ['bannedckey'];
 $civ->ooc_badwords = [['word' => 'badword', 'method' => 'exact', 'category' => 'toxic']];
 $civ->verifier = (new ReflectionClass(RelayVerifier::class))->newInstanceWithoutConstructor();
 $nomads = (new ReflectionClass(RelayServer::class))->newInstanceWithoutConstructor(); $nomads->ooc = 'ooc-nomads';
+$nomads->lobby = 'lobby-nomads';
 $tdm = (new ReflectionClass(RelayServer::class))->newInstanceWithoutConstructor(); $tdm->ooc = 'ooc-tdm';
 // A secondary shard region (the TDM battle world) shares the Barracks' OOC channel and is listed first on purpose.
-$battle = (new ReflectionClass(RelayServer::class))->newInstanceWithoutConstructor(); $battle->ooc = 'ooc-tdm'; $battle->shardOf = 'tdm';
+$battle = (new ReflectionClass(RelayServer::class))->newInstanceWithoutConstructor(); $battle->ooc = 'ooc-tdm'; $battle->lobby = 'lobby-nomads'; $battle->shardOf = 'tdm';
 $civ->enabled_gameservers = ['nomads' => $nomads, 'tdmbattle' => $battle, 'tdm' => $tdm];
 $manager = (new ReflectionClass(\Civ13\MessageServiceManager::class))->newInstanceWithoutConstructor(); $manager->civ13 = $civ;
 $guild = (object) ['owner_id' => 'owner', 'members' => new RelayLookup(['20' => (object) ['nick' => 'Taislin']]), 'channels' => new RelayLookup(['77' => (object) ['name' => 'rules']])];
@@ -117,6 +120,13 @@ check(end($nomads->sent) === ['valckey', '0'], 'Listener dropped a message of "0
 $manager->relayOocMessage($message(['channel_id' => 'ooc-tdm', 'content' => 'tdm chat']));
 check($tdm->sent === [['valckey', 'tdm chat']], 'Second server channel not routed');
 check($battle->sent === [], 'Discord OOC reached a secondary shard region instead of its parent');
+// The lobby channel reaches the join screen only, never OOC, and never a secondary shard region.
+$manager->relayOocMessage($message(['channel_id' => 'lobby-nomads', 'content' => 'welcome <@20>', 'mentions' => [RelayUser::with('20')]]));
+check($nomads->lobbySent === [['valckey', 'welcome @Taislin']] && count($nomads->sent) === 2, 'Lobby channel message not relayed to the join screen only');
+check($battle->lobbySent === [] && $tdm->lobbySent === [], 'Lobby message reached another world');
+$banished = $message(['channel_id' => 'lobby-nomads', 'author' => RelayUser::with('11', false)]); $manager->relayOocMessage($banished);
+check(count($nomads->lobbySent) === 1, 'Banned member reached the join screen');
+$nomads->sent = []; $nomads->lobbySent = [];
 $nomads->sent = [];
 foreach ([
     'other channel' => ['channel_id' => 'general'],
@@ -135,5 +145,17 @@ foreach ([
 }
 $nomads->fail = true; $failed = $message(); $manager->relayOocMessage($failed);
 check($failed->reactions === ['🔥'], 'Failed IPC write not reported');
+$failedLobby = $message(['channel_id' => 'lobby-nomads']); $manager->relayOocMessage($failedLobby);
+check($failedLobby->reactions === ['🔥'] && $nomads->lobbySent === [], 'Failed lobby IPC write not reported');
+
+// The real writer frames lobby lines for SQL/discord2lobby.txt like OOC.
+$dir = sys_get_temp_dir().'/civilizationbot-lobby-'.bin2hex(random_bytes(6)); mkdir($dir.'/SQL', 0700, true);
+try {
+    $real = (new ReflectionClass(\Civ13\GameServer::class))->newInstanceWithoutConstructor(); $real->enabled = true; (new ReflectionProperty(\Civ13\GameServer::class, 'basedir'))->setValue($real, $dir);
+    check($real->LobbyMessage(OocAutoRelay::format("hi\nthere:::x"), 'valckey'), 'Lobby IPC write failed');
+    check(file_get_contents($dir.\Civ13\Civ13::discord2lobby) === "valckey:::hi there: : :x\n", 'Lobby IPC record wrong: '.json_encode(file_get_contents($dir.\Civ13\Civ13::discord2lobby)));
+} finally {
+    @unlink($dir.'/SQL/discord2lobby.txt'); @rmdir($dir.'/SQL'); @rmdir($dir);
+}
 
 echo "OOC auto-relay checks passed\n";
