@@ -33,8 +33,7 @@ final class HostedVerificationSource
 
     private static function authenticatedBrowser(\React\EventLoop\LoopInterface $loop): \React\Http\Browser
     {
-        $connector = new \React\Socket\Connector(self::authenticatedConnectorOptions(), $loop);
-        return new \React\Http\Browser($connector, $loop);
+        return ServerDirectory\SystemDns::browser($loop, self::authenticatedConnectorOptions());
     }
 
     /** Pure policy seam: tests must not trigger Windows system-DNS discovery subprocesses. */

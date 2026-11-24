@@ -40,6 +40,7 @@ use Monolog\Logger;
 use Monolog\Formatter\LineFormatter;
 use Monolog\Handler\StreamHandler;
 use Psr\Log\LoggerInterface;
+use Civ13\ServerDirectory\SystemDns;
 use React\Cache\CacheInterface;
 use React\EventLoop\Loop;
 use React\EventLoop\LoopInterface;
@@ -770,7 +771,7 @@ class Civ13
         }
 
         $options['loop'] = $options['loop'] ?? Loop::get();
-        $options['browser'] = $options['browser'] ?? new Browser($options['loop']);
+        $options['browser'] = $options['browser'] ?? SystemDns::browser($options['loop']);
         $options['filesystem'] = $options['filesystem'] ?? FileSystemFactory::create();
 
         return $options;
@@ -1009,7 +1010,8 @@ class Civ13
             $directories = [];
             foreach ($this->enabled_gameservers as $gameserver) {
                 $group = $gameserver->regionGroupFile();
-                if ($group === '' || $group === ($this->options['access_file_sync']['gateway_group_config'] ?? null)) {
+                if ($group === '' || (($this->options['access_file_sync']['mode'] ?? null) === 'publish'
+                    && $group === ($this->options['access_file_sync']['gateway_group_config'] ?? null))) {
                     continue;
                 }
                 $directories[] = rtrim(str_replace('\\', '/', $gameserver->basedir), '/');

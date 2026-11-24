@@ -12,7 +12,9 @@ selects the adapter; the existing access sync mode, target policies and
 verified mapping requirements still apply. The server's canonical
 approved/whitelist target paths are used for policy validation only. The
 adapter does not read or write those text files or fall back to them.
-The bot's legacy regional approved-copy path skips the opted-in group.
+In publish mode the bot skips its legacy regional approved copies for the
+opted-in group. Preview does not submit a proposal and leaves legacy copying
+unchanged.
 
 The destination is fixed: `<group-root>/front-door/access-inbox/proposal.json`.
 Operators must separate this inbox from the authoritative snapshot's directory
@@ -23,8 +25,11 @@ exactly `group`, `approved`, and `whitelist`; it deliberately contains no
 bot-controlled revision or command/target names. An explicitly allowed empty
 list is represented by a newline, not a missing or empty file.
 
-Keep this disabled until a matching gateway host consumer and region readers
-are available for the selected group. Civ13 #7102 currently supplies the
-gateway authority and consumer for persistent relay groups, not this inbox
-adapter or TDM gameplay enforcement. The local tests cover synthetic group
-binding for both TDM and Persistence, not live authentication or admission.
+The bot requires both `gateway_verified_access` and
+`gateway_verified_access_inbox` to be `true` in the bound group config. The
+paired [Civ13 draft #7102](https://github.com/Civ13/Civ13/pull/7102) includes
+an inbox consumer and access readers for Persistence and Barracks/Battle TDM
+groups with a dedicated relay gateway. Keep the bot option disabled until the
+matching host and region code and inbox permissions for the selected group have
+been reviewed. Ban authority is handled separately. Local tests use synthetic
+TDM and Persistence groups and do not exercise live authentication or admission.

@@ -23,6 +23,7 @@ final class GatewayAccessProposal
         $group = is_string($bytes) && strlen($bytes) <= 1_048_576
             ? json_decode(preg_replace('/^\xEF\xBB\xBF/', '', $bytes), true, 32) : null;
         if (!is_array($group) || ($group['gateway_verified_access'] ?? null) !== true
+            || ($group['gateway_verified_access_inbox'] ?? null) !== true
             || !is_string($group['group'] ?? null) || !preg_match('/^[a-z0-9_-]{1,32}$/D', $group['group'])
             || !PortableProfile::absoluteAdminFile($group['root'] ?? null)
             || !is_int($group['relay_port'] ?? null) || $group['relay_port'] < 1 || $group['relay_port'] > 65535
@@ -80,11 +81,13 @@ final class GatewayAccessProposal
                 || stream_get_contents($stream, self::MAX_WIRE + 1) !== $payload) { throw new \RuntimeException('stage-verify'); }
             if (!fclose($stream)) { throw new \RuntimeException('stage-close'); }
             $stream = null;
+            if ($canCommit() !== true) { return $this->receipt = ['state' => 'superseded']; }
+            // The guard may have observed a group reconfiguration; validate the
+            // protected binding and destination immediately before replacement.
             clearstatcache(true, $path);
             if (self::binding($this->config) !== $this->binding || is_link($path) || (file_exists($path) && !is_file($path))) {
                 return $this->receipt = ['state' => 'blocked', 'reason' => 'gateway-destination-changed'];
             }
-            if ($canCommit() !== true) { return $this->receipt = ['state' => 'superseded']; }
             if (!@rename($stage, $path)) { throw new \RuntimeException('replace-refused'); }
             $stage = null;
             $this->receipt = ['state' => 'submitted'];

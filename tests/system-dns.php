@@ -3,7 +3,27 @@
 declare(strict_types=1);
 
 // Offline check for Civ13\SystemDns: no real shell, no network.
-require __DIR__ . '/../vendor/autoload.php';
+namespace Civ13\ServerDirectory {
+    function shell_exec(string $command): ?string
+    {
+        if (str_contains($command, 'wmic') || !str_contains($command, 'Get-DnsClientServerAddress')) {
+            throw new \RuntimeException('Unexpected resolver discovery command');
+        }
+        $GLOBALS['systemDnsFixtureCalls'] = ($GLOBALS['systemDnsFixtureCalls'] ?? 0) + 1;
+        return "192.0.2.1\n";
+    }
+}
+
+namespace React\Dns\Config {
+    function shell_exec(string $command): never
+    {
+        throw new \LogicException('Implicit ReactPHP Windows DNS discovery reached');
+    }
+}
+
+namespace {
+$loader = require $argv[1] ?? __DIR__ . '/../vendor/autoload.php';
+$loader->addPsr4('Civ13\\', __DIR__.'/../src/Civ13/', true);
 
 use Civ13\ServerDirectory\SystemDns;
 
@@ -34,4 +54,34 @@ $config = SystemDns::load(static function (string $command) use (&$seen): string
 $check($config->nameservers === ['1.1.1.1'], 'PowerShell output becomes the nameserver list');
 $check(!str_contains($seen, 'wmic') && str_contains($seen, 'Get-DnsClientServerAddress'), 'asks PowerShell, not WMIC');
 
+$check(SystemDns::connectorConfig(static fn (string $command): ?string => null)->nameservers === ['8.8.8.8'],
+    'HTTP connector fallback stays equivalent to ReactPHP when discovery is empty');
+$check(SystemDns::connectorConfig(static fn (string $command): string => "192.0.2.1\r\n192.0.2.2")->nameservers === ['192.0.2.1', '192.0.2.2'],
+    'HTTP connector receives all discovered nameservers in order');
+
+// Construct real HTTP clients without issuing requests. The configured
+// resolver branch avoids ReactPHP's implicit DNS discovery on Windows.
+$loop = new React\EventLoop\StreamSelectLoop();
+set_error_handler(static function (int $no, string $message) use ($check): bool {
+    $check(false, "HTTP client construction emitted $message");
+    return true;
+});
+$check(SystemDns::browser($loop, ['dns' => false]) instanceof React\Http\Browser, 'explicit DNS option bypasses discovery');
+$check(($GLOBALS['systemDnsFixtureCalls'] ?? 0) === 0, 'explicit options did not run the Windows discovery fixture');
+$check(SystemDns::browser($loop) instanceof React\Http\Browser, 'ordinary HTTP Browser constructs with explicit DNS');
+$authenticated = new ReflectionMethod(Civ13\HostedVerificationSource::class, 'authenticatedBrowser');
+$check($authenticated->invoke(null, $loop) instanceof React\Http\Browser, 'authenticated verification Browser constructs without implicit DNS');
+restore_error_handler();
+if (DIRECTORY_SEPARATOR === '\\') {
+    $check(($GLOBALS['systemDnsFixtureCalls'] ?? 0) === 1, 'HTTP clients share one PowerShell discovery');
+    $caught = false;
+    try {
+        new React\Http\Browser(null, $loop);
+    } catch (LogicException $error) {
+        $caught = $error->getMessage() === 'Implicit ReactPHP Windows DNS discovery reached';
+    }
+    $check($caught, 'negative control detects an unconfigured ReactPHP Browser');
+}
+
 exit($failures === 0 ? 0 : 1);
+}
