@@ -33,7 +33,8 @@ final class SystemDns
     /** Build an HTTP client without asking react/socket to run its WMIC lookup. */
     public static function browser(LoopInterface $loop, array $options = []): Browser
     {
-        return new Browser(new Connector($options + ['dns' => self::connectorConfig()], $loop), $loop);
+        $options['dns'] ??= self::connectorConfig();
+        return new Browser(new Connector($options, $loop), $loop);
     }
 
     /** Preserve react/socket's normal fallback if no system DNS servers are found. */

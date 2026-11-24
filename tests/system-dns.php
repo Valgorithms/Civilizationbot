@@ -66,6 +66,8 @@ set_error_handler(static function (int $no, string $message) use ($check): bool 
     $check(false, "HTTP client construction emitted $message");
     return true;
 });
+$check(SystemDns::browser($loop, ['dns' => false]) instanceof React\Http\Browser, 'explicit DNS option bypasses discovery');
+$check(($GLOBALS['systemDnsFixtureCalls'] ?? 0) === 0, 'explicit options did not run the Windows discovery fixture');
 $check(SystemDns::browser($loop) instanceof React\Http\Browser, 'ordinary HTTP Browser constructs with explicit DNS');
 $authenticated = new ReflectionMethod(Civ13\HostedVerificationSource::class, 'authenticatedBrowser');
 $check($authenticated->invoke(null, $loop) instanceof React\Http\Browser, 'authenticated verification Browser constructs without implicit DNS');
