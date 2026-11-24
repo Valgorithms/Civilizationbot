@@ -3,6 +3,7 @@ declare(strict_types=1);
 namespace Civ13;
 
 use Civ13\Server\AccessListWriter;
+use Civ13\Server\GatewayAccessProposal;
 use React\Promise\PromiseInterface;
 use function React\Promise\all;
 use function React\Promise\resolve;
@@ -19,7 +20,7 @@ final class AccessFileSync
     private array $capturedRecords = [];
     private \Closure $clock;
     private \Closure $writer;
-    private ?AccessListWriter $publisher = null;
+    private AccessListWriter|GatewayAccessProposal|null $publisher = null;
     private array $preview = ['state' => 'unavailable'];
     private readonly array $settings;
     private readonly object $server;
@@ -71,7 +72,14 @@ final class AccessFileSync
                 throw new \InvalidArgumentException('Explicit separate Verified policy and server SQL destination required');
             }
         }
-        new AccessListWriter($settings['targets'], $settings['max_bytes']); // Constructor is pure.
+        // Keep existing explicit target/empty policy validation; gateway mode never opens these legacy files.
+        new AccessListWriter($settings['targets'], $settings['max_bytes']);
+        if (array_key_exists('gateway_group_config', $settings)) {
+            $binding = GatewayAccessProposal::binding($settings['gateway_group_config']);
+            if (str_replace('\\', '/', $settings['server_basedir']) !== $binding['gateway']) {
+                throw new \InvalidArgumentException('Access sync must follow the dedicated gateway');
+            }
+        }
     }
 
     public function lastPreview(): array
@@ -110,7 +118,12 @@ final class AccessFileSync
         $this->guildId=$app->civ13_guild_id;
         $this->roleIds=$app->role_ids;
         $this->clock=\Closure::fromCallable($clock ?? time(...));
-        if ($settings['mode']==='publish' && $writer===null) { $this->publisher=new AccessListWriter($settings['targets'],$settings['max_bytes']); }
+        if ($settings['mode']==='publish' && $writer===null) {
+            $config = $settings['gateway_group_config'] ?? null;
+            $this->publisher = $config === null
+                ? new AccessListWriter($settings['targets'], $settings['max_bytes'])
+                : new GatewayAccessProposal($config, GatewayAccessProposal::binding($config), $settings['targets'], $settings['max_bytes']);
+        }
         $this->writer=\Closure::fromCallable($writer ?? $this->publisher ?? static fn (): array => ['state'=>'unchanged']);
         $this->coordinator=new AdminSyncCoordinator(true,
             function (): PromiseInterface {
