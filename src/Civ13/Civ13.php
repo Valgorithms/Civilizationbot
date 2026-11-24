@@ -40,6 +40,7 @@ use Monolog\Logger;
 use Monolog\Formatter\LineFormatter;
 use Monolog\Handler\StreamHandler;
 use Psr\Log\LoggerInterface;
+use Civ13\ServerDirectory\SystemDns;
 use React\Cache\CacheInterface;
 use React\EventLoop\Loop;
 use React\EventLoop\LoopInterface;
@@ -770,7 +771,7 @@ class Civ13
         }
 
         $options['loop'] = $options['loop'] ?? Loop::get();
-        $options['browser'] = $options['browser'] ?? new Browser($options['loop']);
+        $options['browser'] = $options['browser'] ?? SystemDns::browser($options['loop']);
         $options['filesystem'] = $options['filesystem'] ?? FileSystemFactory::create();
 
         return $options;

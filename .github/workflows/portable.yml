@@ -26,6 +26,7 @@ jobs:
       - run: php tests/windows/default-branch.php
       - run: php tests/windows/lock-path-guard.php
       - run: php tests/windows/hosted-verifier.php
+      - run: php tests/system-dns.php
       - name: Synthetic authenticated mapping TLS
         if: runner.os == 'Linux'
         timeout-minutes: 2

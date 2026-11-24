@@ -25,6 +25,7 @@ use Discord\Parts\Channel\Message;
 use Discord\Parts\Embed\Embed;
 use Discord\Parts\Thread\Thread;
 use Psr\Log\LoggerInterface;
+use Civ13\ServerDirectory\SystemDns;
 use React\EventLoop\Loop;
 use React\EventLoop\LoopInterface;
 use React\EventLoop\TimerInterface;
@@ -461,7 +462,7 @@ class GameServer
     {
         return isset($this->civ13->browser)
             ? $this->civ13->browser
-            : new Browser($this->loop ?? Loop::get()); // Workaround for civ13->browser property not set in PHPUnit tests
+            : SystemDns::browser($this->loop ?? Loop::get()); // Workaround for civ13->browser property not set in PHPUnit tests
     }
     
     /**
