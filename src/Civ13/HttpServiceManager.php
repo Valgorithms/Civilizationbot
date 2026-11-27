@@ -50,6 +50,7 @@ class HttpServiceManager
     private ?GameReady $gameReady = null;
     private ?VoiceLobbies $voiceLobbies = null;
     private ?TimerInterface $launcherDirectoryTimer = null;
+    private ?TimerInterface $voiceSweepTimer = null;
 
     /** @param Civ13 $civ13 The bot instance; builds the {@see HttpHandler} and binds `discord`/`logger` by reference. */
     public function __construct(public Civ13 &$civ13)
@@ -66,6 +67,9 @@ class HttpServiceManager
     {
         if ($this->launcherDirectoryTimer !== null) {
             $this->civ13->loop->cancelTimer($this->launcherDirectoryTimer);
+        }
+        if ($this->voiceSweepTimer !== null) {
+            $this->civ13->loop->cancelTimer($this->voiceSweepTimer);
         }
         if (isset($this->socket)) {
             $this->socket->close();
@@ -482,7 +486,7 @@ class HttpServiceManager
         }
         $discord = $this->discord;
 
-        return $this->voiceLobbies = new VoiceLobbies(
+        $voice = $this->voiceLobbies = new VoiceLobbies(
             mint: static fn (string $ckey): PromiseInterface => $discord->getHttpClient()->post(\Discord\Http\Endpoint::PARTNER_SDK_TOKEN_BOT, [
                 'external_user_id' => 'byond:'.$ckey,
                 'preferred_global_name' => $ckey,
@@ -503,6 +507,9 @@ class HttpServiceManager
                 }),
             applicationId: $application,
         );
+        $this->voiceSweepTimer = $this->civ13->loop->addPeriodicTimer(VoiceLobbies::SWEEP_INTERVAL, static fn () => $voice->sweep());
+
+        return $voice;
     }
 
     /**

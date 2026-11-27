@@ -27,7 +27,8 @@ use React\Promise\PromiseInterface;
  * - keeps one Discord lobby per world (the region call) and one per team, with
  *   members set from the roster. A member who leaves the roster is removed
  *   after REMOVE_GRACE seconds, so a reconnect or a missed POST does not
- *   churn the lobby.
+ *   churn the lobby. A silent world also loses its presence leases;
+ *   the event loop reconciles Discord membership without another POST.
  *
  * The launcher fetches its access token from the public `/voice/token`
  * endpoint by showing `sha256("civ13-voice-token:" + key)`. The answer is
@@ -41,6 +42,9 @@ use React\Promise\PromiseInterface;
 final class VoiceLobbies
 {
     public const REMOVE_GRACE = 30;
+    // The game normally posts every 5 seconds. Allow several missed heartbeats.
+    public const ROSTER_LEASE = 45;
+    public const SWEEP_INTERVAL = 5;
     public const MAX_MEMBERS = 500; // per world roster
     public const TOKEN_MARGIN = 86400; // re-mint a token with less than a day left
     public const IDLE_TIMEOUT = 600;
@@ -53,7 +57,7 @@ final class VoiceLobbies
     private array $minting = [];
     /** @var array<string,array{server:string,ckey:string,key:string}> token id => owner */
     private array $keys = [];
-    /** @var array<string,array<string,array{team:string,seen:int}>> server => ckey => presence */
+    /** @var array<string,array<string,array{team:string,seen:int,gone?:int}>> server => ckey => presence */
     private array $rosters = [];
     /** @var array<string,string|false> lobby name => Discord lobby ID (false while creating) */
     private array $lobbies = [];
@@ -76,7 +80,7 @@ final class VoiceLobbies
         private string $applicationId,
         ?\Closure $clock = null,
     ) {
-        $this->clock = $clock ?? static fn (): int => time();
+        $this->clock = $clock ?? static fn (): int => (int) floor(hrtime(true) / 1_000_000_000);
     }
 
     /** The roster body the game sends, normalised; null when it is not one. */
@@ -139,21 +143,21 @@ final class VoiceLobbies
             $ckey = (string) $ckey;
             $this->keys[self::tokenId($member['key'])] = ['server' => $server, 'ckey' => $ckey, 'key' => $member['key']];
             $presence[$ckey] = ['team' => $member['team'], 'seen' => $now];
-            $this->ensureToken($ckey);
         }
         // The grace period runs from the first roster without the player.
-        foreach ($presence as $ckey => $seen) {
+        foreach (array_keys($presence) as $ckey) {
             if (isset($members[(string) $ckey])) {
                 continue;
             }
-            $gone = $seen['gone'] ?? $now;
-            if ($gone <= $now - self::REMOVE_GRACE) {
+            $presence[$ckey]['gone'] ??= $now;
+            if (!self::presenceIsActive($presence[$ckey], $now)) {
                 unset($presence[$ckey]);
-            } else {
-                $presence[$ckey]['gone'] = $gone;
             }
         }
         $this->rosters[$server] = $presence;
+        foreach (array_keys($members) as $ckey) {
+            $this->ensureToken((string) $ckey);
+        }
         $this->syncServer($server);
 
         $ids = [];
@@ -167,6 +171,30 @@ final class VoiceLobbies
         return $ids;
     }
 
+    /** Expire silent worlds and retry membership reconciliation without roster traffic. */
+    public function sweep(): void
+    {
+        $now = ($this->clock)();
+        foreach ($this->rosters as $server => $presence) {
+            $this->rosters[$server] = array_filter($presence, static fn (array $entry): bool => self::presenceIsActive($entry, $now));
+        }
+        foreach ($this->keys as $id => $owner) {
+            if (!isset($this->rosters[$owner['server']][$owner['ckey']])) {
+                unset($this->keys[$id]);
+            }
+        }
+        foreach (array_keys($this->rosters) as $server) {
+            $this->syncServer($server);
+        }
+    }
+
+    /** @param array{team:string,seen:int,gone?:int} $entry */
+    private static function presenceIsActive(array $entry, int $now): bool
+    {
+        return $entry['seen'] > $now - self::ROSTER_LEASE
+            && (!isset($entry['gone']) || $entry['gone'] > $now - self::REMOVE_GRACE);
+    }
+
     /**
      * The launcher's sealed token answer for a token ID, or null when the ID
      * is unknown or its token is not ready yet.
@@ -177,8 +205,15 @@ final class VoiceLobbies
             return null;
         }
         $owner = $this->keys[$id];
+        $now = ($this->clock)();
+        $presence = $this->rosters[$owner['server']][$owner['ckey']] ?? null;
+        if ($presence === null || !self::presenceIsActive($presence, $now)) {
+            unset($this->keys[$id]);
+
+            return null;
+        }
         $token = $this->tokens[$owner['ckey']] ?? null;
-        if ($token === null || $token['expires_at'] <= ($this->clock)()) {
+        if ($token === null || $token['expires_at'] <= $now) {
             $this->ensureToken($owner['ckey']);
 
             return null;
@@ -189,7 +224,7 @@ final class VoiceLobbies
             'server' => $owner['server'],
             'user_id' => $token['user_id'],
             'access_token' => $token['access_token'],
-            'expires_in' => $token['expires_at'] - ($this->clock)(),
+            'expires_in' => $token['expires_at'] - $now,
         ], JSON_THROW_ON_ERROR);
 
         return json_encode(['v' => 1, 'sealed' => self::seal($owner['key'], $id, $payload)], JSON_THROW_ON_ERROR);
@@ -281,7 +316,11 @@ final class VoiceLobbies
     private function desired(string $server): array
     {
         $want = ['region:'.$server => []];
+        $now = ($this->clock)();
         foreach ($this->rosters[$server] ?? [] as $ckey => $presence) {
+            if (!self::presenceIsActive($presence, $now)) {
+                continue;
+            }
             $user = $this->tokens[$ckey]['user_id'] ?? null;
             if ($user === null) {
                 continue;
@@ -343,14 +382,15 @@ final class VoiceLobbies
         }
         $have = $this->members[$name] ?? [];
         $changes = [];
-        foreach ($users as $user => $_) {
-            if (!isset($have[$user])) {
-                $changes[] = ['id' => (string) $user];
-            }
-        }
+        // Revocations should not sit behind a batch of new admissions.
         foreach ($have as $user => $_) {
             if (!isset($users[$user])) {
                 $changes[] = ['id' => (string) $user, 'remove_member' => true];
+            }
+        }
+        foreach ($users as $user => $_) {
+            if (!isset($have[$user])) {
+                $changes[] = ['id' => (string) $user];
             }
         }
         if (!$changes) {
@@ -361,7 +401,7 @@ final class VoiceLobbies
         ($this->updateMembers)($lobby, $batch)->then(function ($confirmed = null) use ($server, $name, $batch): void {
             unset($this->syncing[$name]);
             // Discord can leave out an addition it refused; only confirmed
-            // additions count, so the rest are tried again on the next roster.
+            // additions count, so the rest are tried again at reconciliation.
             $added = is_array($confirmed) ? array_flip(array_map('strval', $confirmed)) : null;
             $progress = false;
             foreach ($batch as $change) {
@@ -377,7 +417,7 @@ final class VoiceLobbies
                 $this->syncServer($server); // the next batch, if any
             }
         }, function ($error = null) use ($name): void {
-            unset($this->syncing[$name]); // the next roster tries again
+            unset($this->syncing[$name]); // the next reconciliation tries again
             if ($error instanceof \Discord\Http\Exceptions\NotFoundException) {
                 // Discord deleted the lobby (idle timeout); make a new one next time.
                 unset($this->lobbies[$name], $this->members[$name]);
