@@ -76,7 +76,7 @@ $voice->roster('tdm', $onlyAlice);
 check(count($updates) === 3, 'bob is kept while within the grace period');
 check($voice->token(VoiceLobbies::tokenId($keyB)) === null, 'but his launcher key stops working at once');
 $now += VoiceLobbies::REMOVE_GRACE;
-$voice->roster('tdm', $onlyAlice);
+$voice->sweep();
 check(count($updates) === 4 && $updates[3][1] === [['id' => '100000000000000002', 'remove_member' => true]], 'bob is removed after the grace period');
 $updates[3][2]->resolve(null);
 
@@ -119,7 +119,7 @@ $fresh->roster('tdm', $numeric);
 check(count($updates) === 2 && $updates[1][1] === [['id' => '100000000000000009']], 'and is tried again on the next roster');
 $updates[1][2]->resolve(['100000000000000009']);
 check($fresh->memberIds('region:tdm') === ['100000000000000009'], 'a confirmed addition is recorded');
-$now += 1000; // a long quiet spell, then the player leaves
+$now += 1; // the player leaves while the world is still posting
 $fresh->roster('tdm', []);
 check(count($updates) === 2, 'the grace period starts at the first roster without the player');
 $now += VoiceLobbies::REMOVE_GRACE;
@@ -131,5 +131,52 @@ $last = end($updates);
 $last[2]->reject(new \Discord\Http\Exceptions\NotFoundException('Unknown Lobby'));
 $fresh->roster('tdm', $numeric);
 check(count($creates) === 2 && $creates[1][0]['civ13_kind'] === 'region', 'a lobby Discord deleted is made again');
+
+// A silent world expires both its region and team membership. A fresh world
+// continues normally even when a membership removal fails and is retried.
+$now = 10000; $mints = []; $creates = []; $updates = [];
+$silent = new VoiceLobbies(
+    mint: static function (string $ckey) use (&$mints) { $d = new Deferred(); $mints[] = [$ckey, $d]; return $d->promise(); },
+    createLobby: static function (array $metadata) use (&$creates) { $d = new Deferred(); $creates[] = [$metadata, $d]; return $d->promise(); },
+    updateMembers: static function (string $lobby, array $members) use (&$updates) { $d = new Deferred(); $updates[] = [$lobby, $members, $d]; return $d->promise(); },
+    applicationId: '1562126764849897544',
+    clock: static function () use (&$now): int { return $now; },
+);
+$idA = VoiceLobbies::tokenId($keyA);
+$idB = VoiceLobbies::tokenId($keyB);
+$aliceId = '100000000000000001';
+$bobId = '100000000000000002';
+$mintResponse = static fn (string $id): array => ['access_token' => 'test-token', 'expires_in' => 604800, 'id_token' => idToken($id)];
+$silent->roster('gaia', $onlyAlice);
+$silent->roster('tdm', ['bob' => $parsed['bob']]);
+$mints[0][1]->resolve($mintResponse($aliceId));
+$mints[1][1]->resolve($mintResponse($bobId));
+foreach ($creates as $i => $creation) {
+    $creation[1]->resolve('90000000000000001'.$i);
+}
+$updates[0][2]->resolve([$aliceId]);
+$updates[2][2]->resolve([$bobId]);
+$now += VoiceLobbies::ROSTER_LEASE - 1;
+$silent->roster('tdm', ['bob' => $parsed['bob']]);
+$silent->sweep();
+check(count($updates) === 3 && $silent->token($idA) !== null, 'a lease remains usable just before expiry');
+++$now;
+check($silent->token($idA) === null, 'expired credential stops working even before a sweep');
+$silent->sweep();
+check(count($updates) === 4 && $updates[3][0] === '900000000000000010' && $updates[3][1] === [['id' => $aliceId, 'remove_member' => true]], 'silent world is removed from the region without another roster');
+$updates[1][2]->resolve([$aliceId]);
+check(count($updates) === 5 && $updates[4][0] === '900000000000000011' && $updates[4][1] === [['id' => $aliceId, 'remove_member' => true]], 'an in-flight team addition is reconciled immediately after it completes');
+$updates[3][2]->reject(new RuntimeException('transient failure'));
+$updates[4][2]->resolve(null);
+$silent->sweep();
+check(count($updates) === 6 && $updates[5][1] === $updates[3][1], 'failed removal is retried without roster traffic');
+$updates[5][2]->resolve(null);
+check($silent->memberIds('region:gaia') === [] && $silent->memberIds('team:gaia:GERMAN') === [], 'both expired memberships are gone');
+check($silent->memberIds('region:tdm') === [$bobId] && $silent->token($idB) !== null, 'another world with a current roster stays connected');
+$lateKey = str_repeat('d', 40);
+$silent->roster('late', ['dave' => ['key' => $lateKey, 'team' => '']]);
+$now += VoiceLobbies::ROSTER_LEASE;
+$mints[2][1]->resolve($mintResponse('100000000000000004'));
+check(count($creates) === 3 && $silent->token(VoiceLobbies::tokenId($lateKey)) === null, 'late mint cannot admit a player after the lease expires');
 
 echo "voice lobby contracts: {$checks} checks passed\n";
